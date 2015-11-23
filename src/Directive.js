@@ -5,9 +5,3 @@ function Directive(name, options) {
 
 	if(isObject(options)) extend(this, options);
 }
-
-Directive.prototype = {
-	execute: function() {
-
-	}
-};

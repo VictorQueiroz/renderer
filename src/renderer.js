@@ -58,7 +58,9 @@ renderer.register = function(name, factory) {
 						options.compile = lazy(data);
 					} else if (!data.compile && data.link) {
 						options.compile = lazy(data.link);
+					}
 
+					if(isObject(data)) {
 						extend(options, data);
 					}
 

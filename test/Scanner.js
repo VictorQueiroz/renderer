@@ -16,10 +16,21 @@ describe('Scanner', function() {
 
 	it('should find attributes directives', function() {
 		renderer.register('tsAttributeDirective', function() {
-			return noop;
+			return {
+				compile: function(node) {
+					console.log('compile!', node);
+
+					return function(scope, node) {
+						console.log('post link', node);
+					};
+				}
+			};
 		});
 
 		scanner = new Scanner(node.childNodes[0], directiveRegistry);
 		expect(scanner.scan().length).toBe(1);
+
+		var compile = new Compile(node, directiveRegistry);
+		compile.execute();
 	});
 });
