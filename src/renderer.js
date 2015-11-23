@@ -1,6 +1,8 @@
 var directiveRegistry = {
 	$$get: function(name, registry) {
 		registry = registry || directiveRegistry;
+		name = name || '';
+
 		if(!registry.hasOwnProperty(name)) {
 			return null;
 		}
@@ -24,7 +26,7 @@ renderer.invokeFactory = function(factory) {
 
 renderer.clearRegistry = function() {
 	forEach(directiveRegistry, function(value, name) {
-		delete directiveRegistry[name];
+		if(name !== '$$get') delete directiveRegistry[name];
 	});
 
 	return this;

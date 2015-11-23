@@ -22,10 +22,10 @@ describe('renderer', function() {
 	});
 
 	it('should clear the registry', function() {
-		expect(Object.keys(directiveRegistry).length).toBe(1);
+		expect(Object.keys(directiveRegistry).length).toBe(2);
 
 		renderer.clearRegistry();
 
-		expect(Object.keys(directiveRegistry).length).toBe(0);
+		expect(Object.keys(directiveRegistry).length).toBe(1);
 	});
 });
