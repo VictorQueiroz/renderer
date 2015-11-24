@@ -11,8 +11,6 @@ describe('Compile', function() {
 		renderer.register('div', function() {
 			return {
 				compile: function() {
-					console.log('COMPILE!');
-
 					return function(scope, el) {
 						el.classList.add('div-directive');
 					};

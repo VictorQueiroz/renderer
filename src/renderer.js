@@ -1,24 +1,28 @@
 var directiveRegistry = {
-	$$get: function(name, registry) {
-		registry = registry || directiveRegistry;
-		name = name || '';
-
-		if(!registry.hasOwnProperty(name)) {
-			return null;
-		}
-
-		var loader = registry[name];
-
-		if(!loader.executed) {
-			extend(loader, {
-				load: loader.load(),
-				executed: true
-			});
-		}
-
-		return loader.load;
+	$$get: function(name) {
+		return getFromRegistry(name, directiveRegistry);
 	}
 };
+
+function getFromRegistry(name, registry) {
+	registry = registry;
+	name = name || '';
+
+	if(!registry.hasOwnProperty(name)) {
+		return null;
+	}
+
+	var loader = registry[name];
+
+	if(!loader.executed) {
+		extend(loader, {
+			load: loader.load(),
+			executed: true
+		});
+	}
+
+	return loader.load;
+}
 
 renderer.invokeFactory = function(factory) {
 	return factory.call(null);
@@ -33,7 +37,7 @@ renderer.clearRegistry = function() {
 };
 
 renderer.hasDirective = function(name) {
-
+	return directiveRegistry.hasOwnProperty(name);
 };
 
 renderer.getDirectives = directiveRegistry.$$get;
