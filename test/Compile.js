@@ -61,7 +61,6 @@ describe('Compile', function() {
 
 			renderer.register('firstMe', function() {
 				return {
-					terminal: true,
 					priority: 100,
 					link: function() {
 						list.push(LINK_1);
@@ -158,26 +157,44 @@ describe('Compile', function() {
 			renderer.clearRegistry();
 		});
 
-		xit('should transclude the entire directive element', function() {
-			node = document.createElement('span');
-			node.appendChild(createNode(
-				'<div>' +
-					'<div></div>' +
+		it('should redefine the terminal priority of a node and keep the last ' +
+			 'set of directives on the node until the transclude() function gets ' +
+			 'executed', function() {
+			node = createNode(
+				'<div transclude-me another-directive-here>' +
+					'<div transclude-me></div>' +
 				'</div>'
-			).appendChild(createNode()));
+			);
 
-			renderer.register('div', function() {
+			renderer.register('anotherDirectiveHere', function() {
+				return function(scope, el) {
+					el.setAttribute('compiled', 'true');
+				};
+			});
+
+			renderer.register('transcludeMe', function() {
 				return {
 					transclude: 'element',
+					priority: 1000,
+					terminal: true,
 					compile: function(el, attrs, $transclude) {
 						return function(scope, el, attrs, ctrls, transclude) {
 							transclude(function(clone) {
-								el.parentNode.insertBefore(clone, el);
+								el.parentNode.insertBefore(clone, el.nextSibling);
 							});
 						}
 					}
 				}
 			});
+
+			var compile = new Compile(node, directiveRegistry);
+			compile.execute(scope);
+
+			expect(node.outerHTML).toEqual(
+				'<div><!-- transcludeMe:  --><div transclude-me="" ' +
+				'another-directive-here="" compiled="true"><!-- transcludeMe:  -->' +
+				'<div transclude-me=""></div></div></div>'
+			);
 
 			renderer.clearRegistry();
 		});

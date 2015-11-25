@@ -3,7 +3,8 @@
  * NodeLink, which compiles only a single node and are
  * capable of execute the compile child link of the node
  */
-function CompositeLink (nodeList, registry) {
+function CompositeLink (nodeList, registry, options) {
+	this.options = options;
 	this.nodeList = nodeList;
 	this.registry = registry;
 
@@ -12,20 +13,24 @@ function CompositeLink (nodeList, registry) {
 			nodeLinks = [],
 			childLink,
 			hasChildNodes,
+			attributes,
 			directives = [];
 
 	for(i = 0; i < nodeList.length; i++) {
-		directives = new Scanner(nodeList[i], this.registry).scan();
+		scanner = new Scanner(nodeList[i], this.registry, i === 0 ? this.options.maxPriority : undefined);
+
+		directives = scanner.scan();
+		attributes = scanner.attributes;
 
 		hasChildNodes = nodeList[i].childNodes &&
 										nodeList[i].childNodes.length > 0 &&
 										nodeList[i].childNodes ||
 										0;
 
-		nodeLink = new NodeLink(nodeList[i], directives);
+		nodeLink = new NodeLink(nodeList[i], directives, attributes);
 		nodeLink.prepare(registry);
 
-		childLink = new Compile(hasChildNodes ? nodeList[i].childNodes : [], this.registry);
+		childLink = new Compile(hasChildNodes ? nodeList[i].childNodes : [], this.registry, this.options);
 
 		nodeLinks.push(nodeLink, childLink);
 	}

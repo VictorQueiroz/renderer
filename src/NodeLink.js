@@ -1,12 +1,14 @@
-function NodeLink(node, directives) {
+function NodeLink(node, directives, attributes) {
 	this.node = node;
 	this.links = {
 		post: [],
 		pre: []
 	};
 
+	this.attributes = attributes;
 	this.directives = directives;
 	this.transclude = null;
+	this.terminalPriority = -Number.MAX_VALUE;
 }
 
 NodeLink.prototype = {
@@ -19,13 +21,30 @@ NodeLink.prototype = {
 		for(i = 0; i < ii; i++) {
 			directive = this.directives[i];
 
+			if (this.terminalPriority > directive.priority) {
+        break; // prevent further processing of directives
+      }
+
 			if(directive.transclude) {
+				if(directive.transclude == 'element') {
+					this.terminalPriority = directive.priority;
+				}
+
 				options = {
 					type: directive.transclude,
-					registry: registry
+					registry: registry,
+					directive: directive,
+					attributes: this.attributes,
+					terminalPriority: this.terminalPriority,
 				};
 
 				this.transclude = new Transclude(this.node, options);
+
+				if(directive.transclude == 'element' &&
+					this.node !== this.transclude.comment) {
+					this.node = this.transclude.comment;
+				}
+
 				this.transcludeFn = this.transclude.getTranscludeCallback();
 			}
 
@@ -35,6 +54,11 @@ NodeLink.prototype = {
 			}
 
 			this.addLink(directive.compile(this.node, null, this.transcludeFn));
+
+			if(directive.terminal) {
+				this.terminal = true;
+				this.terminalPriority = Math.max(this.terminalPriority, directive.priority);
+			}
 		}
 	},
 

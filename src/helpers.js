@@ -48,6 +48,10 @@ function isFunction (value) {
 	return typeof value === 'function';
 }
 
+function isNumber (value) {
+	return typeof value === 'number';
+}
+
 function pick(object, keys) {
 	if(isString(keys)) {
 		keys = [keys];

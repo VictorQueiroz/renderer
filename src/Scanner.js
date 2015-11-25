@@ -2,10 +2,12 @@
  * Scanner all the present directives
  * in a dom element
  */
-function Scanner(node, registry) {
+function Scanner(node, registry, maxPriority) {
 	this.node = node;
 	this.registry = registry;
+	this.attributes = {},
 	this.directives = [];
+	this.maxPriority = maxPriority;
 }
 
 Scanner.prototype = {
@@ -35,6 +37,8 @@ Scanner.prototype = {
 
 			name = this.normalize(attributes[i].name);
 
+			this.attributes[name] = attributes[i].value;
+
 			this.add(name, 'A');
 		}
 
@@ -53,6 +57,7 @@ Scanner.prototype = {
 
 	add: function(name, restrict) {
 		var directives = this.registry.$$get(name);
+		var maxPriority = this.maxPriority;
 
 		if(!directives) {
 			return null;
@@ -65,7 +70,9 @@ Scanner.prototype = {
 		for(i = 0; i < ii; i++) {
 			directive = directives[i];
 
-			if(directive.restrict.indexOf(restrict) === -1) {
+			if(directive.restrict.indexOf(restrict) === -1 ||
+				(isDefined(maxPriority) && !(directive.priority > maxPriority))) {
+				this.clearPriority();
 				continue;
 			}
 
@@ -75,5 +82,9 @@ Scanner.prototype = {
 
 	normalize: function(name) {
 		return camelCase(name);
+	},
+
+	clearPriority: function() {
+		delete this.maxPriority;	
 	}
 };
