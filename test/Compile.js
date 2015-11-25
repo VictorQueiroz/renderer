@@ -52,6 +52,44 @@ describe('Compile', function() {
 		renderer.clearRegistry();
 	});
 
+	describe('Priority', function() {
+		it('should respect directive priority', function() {
+			var LINK_1 = {},
+					LINK_2 = {};
+
+			var list   = [];
+
+			renderer.register('firstMe', function() {
+				return {
+					terminal: true,
+					priority: 100,
+					link: function() {
+						list.push(LINK_1);
+					}
+				};
+			});
+
+			renderer.register('thenMe', function() {
+				return {
+					priority: 90,
+					link: function() {
+						list.push(LINK_2);
+					}
+				};
+			});
+
+			node = createNode(
+				'<div then-me first-me class="a b c d"></div>'
+			);
+
+			var compile = new Compile(node, directiveRegistry);
+			compile.execute(scope);
+
+			expect(list[0]).toBe(LINK_1);
+			expect(list[1]).toBe(LINK_2);
+		});
+	});
+
 	describe('Transclusion', function() {
 		it('should render content transclude directives', function() {
 			node = document.createElement('span');

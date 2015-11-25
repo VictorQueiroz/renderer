@@ -24,10 +24,29 @@ Scanner.prototype = {
 		this.add(this.normalize(node.nodeName), 'E');
 
 		for(i = 0; i < ii; i++) {
+			if(attributes[i].name == 'class') {
+				var classes = attributes[i].value.split(' ');
+				var j,
+						jj = classes.length;
+				for(j = 0; j < jj; j++) {
+					this.add(this.normalize(classes[j]), 'C');
+				}
+			}
+
 			name = this.normalize(attributes[i].name);
 
 			this.add(name, 'A');
 		}
+
+		/**
+     * Sorting function for bound directives.
+     */
+    this.directives.sort(function (a, b) {
+      var diff = b.priority - a.priority;
+      if (diff !== 0) return diff;
+      if (a.name !== b.name) return (a.name < b.name) ? -1 : 1;
+      return a.index - b.index;
+    });
 
 		return this.directives;
 	},
