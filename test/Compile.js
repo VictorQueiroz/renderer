@@ -86,6 +86,115 @@ describe('Compile', function() {
 
 			expect(list[0]).toBe(LINK_1);
 			expect(list[1]).toBe(LINK_2);
+
+			renderer.clearRegistry();
+		});
+	});
+
+	describe('Controller', function() {
+		it('should instantiate a directive controller', function() {
+			node = createNode(
+				'<span></span>'
+			);
+
+			var divCtrl,
+					ctrlSpy = jasmine.createSpy();
+
+			function DivCtrl () {
+				this.someValueHere = {};
+
+				divCtrl = this;
+			}
+
+			renderer.register('div', function() {
+				return {
+					controller: DivCtrl,
+					link: function(scope, el, attrs, divCtrl) {
+						ctrlSpy(divCtrl);
+					}
+				}
+			});
+
+			var compile = new Compile(node, directiveRegistry);
+			compile.execute(scope);
+
+			expect(divCtrl instanceof DivCtrl === true).toBeTruthy();
+			expect(ctrlSpy).toHaveBeenCalledWith(divCtrl);
+
+			renderer.clearRegistry();
+		});
+
+		it('should require parent controllers from different directives', function() {
+			node = createNode(
+				'<span></span>'
+			);
+
+			var divCtrl,
+					spanSpy = jasmine.createSpy(),
+					spanCtrl
+
+			function DivCtrl () {
+				if(!divCtrl) {
+					divCtrl = this;
+				}
+			}
+
+			renderer.register('div', function() {
+				return {
+					controller: DivCtrl,
+					require: 'div'
+				};
+			});
+
+			renderer.register('span', function() {
+				return {
+					require: '?^div',
+					link: function(scope, el, attrs, divCtrl) {
+						spanCtrl = divCtrl;
+						spanSpy(spanCtrl);
+					}
+				}
+			});
+
+			var compile = new Compile(node, directiveRegistry);
+			compile.execute(scope);
+
+			expect(spanSpy).toHaveBeenCalledWith(divCtrl);
+
+			renderer.clearRegistry();
+		});
+
+		it('should require same element controllers', function() {
+			node = createNode(
+				'<span content></span>'
+			);
+
+			var spanSpy = jasmine.createSpy(),
+					spanCtrl;
+
+			function SpanCtrl() {
+				spanCtrl = this;
+			}
+
+			renderer.register('span', function() {
+				return {
+					controller: SpanCtrl
+				};
+			});
+
+			renderer.register('content', function() {
+				return {
+					require: '?span',
+					link: function(scope, el, attr, spanCtrl) {
+						spanSpy(spanCtrl);
+					}
+				};
+			});
+
+			var compile = new Compile(node, directiveRegistry);
+			compile.execute(scope);
+
+			expect(spanSpy).toHaveBeenCalledWith(spanCtrl);
 		});
 	});
 

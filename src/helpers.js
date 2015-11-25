@@ -183,6 +183,11 @@ function inherits (ctor, superCtor, attrs) {
   }
 }
 
+var id = 0;
+function nextId() {
+	return ++id;
+}
+
 renderer.prototype = {
 	__elementCache: {},
 
@@ -194,7 +199,7 @@ var cacheKey = renderer.prototype.__cacheKey;
 
 function elementData(node, key, value) {
 	if(!node.hasOwnProperty(cacheKey)) {
-		node[cacheKey] = renderer.id();
+		node[cacheKey] = nextId();
 
 		elCache[node[cacheKey]] = {};
 	}
