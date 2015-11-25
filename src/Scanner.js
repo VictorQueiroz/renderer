@@ -15,13 +15,15 @@ Scanner.prototype = {
 		}
 
 		var node = this.node;
+
 		var attributes = node.attributes;
 		var name,
-				i;
+				i,
+				ii = attributes && attributes.length || 0;
 
 		this.add(this.normalize(node.nodeName), 'E');
 
-		for(i = 0; i < attributes.length; i++) {
+		for(i = 0; i < ii; i++) {
 			name = this.normalize(attributes[i].name);
 
 			this.add(name, 'A');

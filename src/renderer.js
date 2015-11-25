@@ -4,6 +4,59 @@ var directiveRegistry = {
 	}
 };
 
+function registerDirective(name, factory, registry) {
+	if(!registry.hasOwnProperty(name)) {
+		registry[name] = {
+			directives: [],
+
+			executed: false,
+
+			load: function() {
+				var directives = this.directives;
+				var data,
+						options,
+						directive,
+						instances = [];
+
+				forEach(directives, function(factory, index) {
+					data = renderer.invokeFactory(factory);
+					options = {};
+
+					if(isFunction(data)) {
+						options.compile = lazy(data);
+					} else if (!data.compile && data.link) {
+						options.compile = lazy(data.link);
+					} else if (!data.compile && !data.link) {
+						data.compile = noop;
+					}
+
+					if(isObject(data)) {
+						extend(options, data);
+					}
+
+					defaults(options, {
+						priority: 0,
+						index: index,
+						name: name,
+						restrict: 'EA'
+					});
+
+					defaults(options, {
+						require: (options.controller && options.name)
+					});
+
+					directive = new Directive(name, options);
+					instances.push(directive);
+				});
+
+				return instances;
+			}
+		};
+	}
+
+	registry[name].directives.push(factory);
+}
+
 function getFromRegistry(name, registry) {
 	registry = registry;
 	name = name || '';
@@ -43,52 +96,5 @@ renderer.hasDirective = function(name) {
 renderer.getDirectives = directiveRegistry.$$get;
 
 renderer.register = function(name, factory) {
-	if(!directiveRegistry.hasOwnProperty(name)) {
-		directiveRegistry[name] = {
-			directives: [],
-
-			executed: false,
-
-			load: function() {
-				var directives = this.directives;
-				var data,
-						options,
-						directive,
-						instances = [];
-
-				forEach(directives, function(factory, index) {
-					data = renderer.invokeFactory(factory);
-					options = {};
-
-					if(isFunction(data)) {
-						options.compile = lazy(data);
-					} else if (!data.compile && data.link) {
-						options.compile = lazy(data.link);
-					}
-
-					if(isObject(data)) {
-						extend(options, data);
-					}
-
-					defaults(options, {
-						priority: 0,
-						index: index,
-						name: name,
-						restrict: 'EA'
-					});
-
-					defaults(options, {
-						require: (options.controller && options.name)
-					});
-
-					directive = new Directive(name, options);
-					instances.push(directive);
-				});
-
-				return instances;
-			}
-		};
-	}
-
-	directiveRegistry[name].directives.push(factory);
+	return registerDirective(name, factory, directiveRegistry);
 };

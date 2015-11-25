@@ -3,17 +3,38 @@ function NodeLink(node, directives) {
 	this.links = {
 		post: [],
 		pre: []
-	};	
+	};
+
 	this.directives = directives;
+	this.transclude = null;
 }
 
 NodeLink.prototype = {
-	prepare: function() {
+	prepare: function(registry) {
 		var i,
-				ii = this.directives.length;
+				ii = this.directives.length,
+				options,
+				directive;
 
 		for(i = 0; i < ii; i++) {
-			this.addLink(this.directives[i].compile(this.node));
+			directive = this.directives[i];
+
+			if(directive.transclude) {
+				options = {
+					type: directive.transclude,
+					registry: registry
+				};
+
+				this.transclude = new Transclude(this.node, options);
+				this.transcludeFn = this.transclude.getTranscludeCallback();
+			}
+
+			if(directive.template) {
+				this.node.innerHTML = directive.template;
+				this.hasTemplate = true;
+			}
+
+			this.addLink(directive.compile(this.node, null, this.transcludeFn));
 		}
 	},
 
@@ -27,12 +48,18 @@ NodeLink.prototype = {
 		}
 	},
 
-	execute: function(scope, childLink) {
-		this.invokeLinks('pre', scope, this.node);
+	execute: function(scope, childLink, transcludeFn) {
+		if(this.transclude) {
+			this.transcludeFn = this.transclude.getTranscludeCallback(scope);
+		} else if (!this.transcludeFn && isFunction(transcludeFn)) {
+			this.transcludeFn = transcludeFn;
+		}
 
-		childLink.execute(scope);
+		this.invokeLinks('pre', scope, this.node, null, null, this.transcludeFn);
 
-		this.invokeLinks('post', scope, this.node);
+		childLink.execute(scope, this.transcludeFn);
+
+		this.invokeLinks('post', scope, this.node, null, null, this.transcludeFn);
 	},
 
 	addLink: function(link) {

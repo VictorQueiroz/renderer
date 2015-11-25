@@ -11,21 +11,21 @@ function CompositeLink (nodeList, registry) {
 			nodeLink,
 			nodeLinks = [],
 			childLink,
-			childNodes,
+			hasChildNodes,
 			directives = [];
 
 	for(i = 0; i < nodeList.length; i++) {
 		directives = new Scanner(nodeList[i], this.registry).scan();
 
-		childNodes = nodeList[i].childNodes &&
-								nodeList[i].childNodes.length > 0 &&
-								nodeList[i].childNodes ||
-								[];
-
-		childLink = new Compile(childNodes, this.registry);
+		hasChildNodes = nodeList[i].childNodes &&
+										nodeList[i].childNodes.length > 0 &&
+										nodeList[i].childNodes ||
+										0;
 
 		nodeLink = new NodeLink(nodeList[i], directives);
-		nodeLink.prepare();
+		nodeLink.prepare(registry);
+
+		childLink = new Compile(hasChildNodes ? nodeList[i].childNodes : [], this.registry);
 
 		nodeLinks.push(nodeLink, childLink);
 	}
@@ -34,11 +34,11 @@ function CompositeLink (nodeList, registry) {
 }
 
 CompositeLink.prototype = {
-	execute: function(scope) {
+	execute: function(scope, childLink, transcludeFn) {
 		var i, ii = this.nodeLinks.length;
 
 		for(i = 0; i < ii; i++) {
-			this.nodeLinks[i].execute(scope, this.nodeLinks[++i]);
+			this.nodeLinks[i].execute(scope, this.nodeLinks[++i], transcludeFn);
 		}
 	}
 };

@@ -148,6 +148,12 @@ function lowercase(str) {
 
 function lazy(callback, context) {
 	return function() {
+		return bind(callback, context);
+	};
+}
+
+function bind(callback, context) {
+	return function() {
 		return callback.apply(context, arguments);
 	};
 }
