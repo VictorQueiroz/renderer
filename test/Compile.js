@@ -91,6 +91,36 @@ describe('Compile', function() {
 		});
 	});
 
+	describe('Template', function() {
+		it('should join an array defined template', function() {
+			node = createNode(
+				'<span>' +
+					'Some content here' +
+				'</span>'
+			);
+
+			renderer.register('span', function() {
+				return {
+					template: [
+						'<div>',
+							'This is some test content',
+						'</div>'
+					]
+				};
+			});
+
+			var compile = new Compile(node, directiveRegistry);
+			compile.execute(scope);
+
+			expect(node.outerHTML).toEqual(
+				'<div><span><div>This is some test content' +
+				'</div></span></div>'
+			);
+
+			renderer.clearRegistry();
+		});
+	});
+
 	describe('Controller', function() {
 		it('should instantiate a directive controller', function() {
 			node = createNode(

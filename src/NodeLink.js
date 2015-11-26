@@ -59,6 +59,10 @@ NodeLink.prototype = {
 			}
 
 			if(directive.template) {
+				if(isArray(directive.template)) {
+					directive.template = directive.template.join('');
+				}
+
 				this.node.innerHTML = directive.template;
 				this.hasTemplate = true;
 			}
