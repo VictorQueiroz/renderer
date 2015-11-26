@@ -34,6 +34,10 @@ NodeLink.prototype = {
       	context.controllers[directive.name] = directive;
       }
 
+      if(!directive.transclude && directive.template) {
+      	directive.transclude = true;
+      }
+
 			if(directive.transclude) {
 				if(directive.transclude == 'element') {
 					this.terminalPriority = directive.priority;
@@ -67,7 +71,7 @@ NodeLink.prototype = {
 				this.hasTemplate = true;
 			}
 
-			this.addLink(directive.compile(this.node, null, this.transcludeFn), directive);
+			this.addLink(directive.compile(this.node, this.attributes, this.transcludeFn), directive);
 
 			if(directive.terminal) {
 				this.terminal = true;
@@ -170,11 +174,11 @@ NodeLink.prototype = {
 			this.controllers = this.setupControllers(scope, this.node, this.attributes, transcludeFn);
 		}
 
-		this.invokeLinks('pre', scope, this.node, null, null, this.transcludeFn);
+		this.invokeLinks('pre', scope, this.node, this.attributes, null, this.transcludeFn);
 
 		childLink.execute(scope, this.transcludeFn);
 
-		this.invokeLinks('post', scope, this.node, null, null, this.transcludeFn);
+		this.invokeLinks('post', scope, this.node, this.attributes, null, this.transcludeFn);
 	},
 
 	addLink: function(link, directive) {
