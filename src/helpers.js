@@ -32,6 +32,76 @@ function clone (object) {
 	return cloned;
 }
 
+function some(array, iterator, context) {
+	var i,
+			ii = array.length,
+			result = false;
+	for(i = 0; i < ii; i++) {
+		if(iterator.call(context, array, i)) {
+			result = true;
+		}
+	}
+	return result;
+}
+
+function get (object, path) {
+	var keys = path.split('.');
+
+	var i,
+			ii = keys.length,
+			result = object;
+	for(i = 0; i < ii; i++) {
+		if(result) {
+			result = result[keys[i]];
+		}
+	}
+
+	return result;
+}
+
+function set (object, path, value) {
+	var keys = path.split('.');
+
+	var i,
+			ii = keys.length,
+			result = object;
+
+	for(i = 0; i < ii; i++) {
+		if(i === (ii - 1)) {
+			result[keys[i]] = value;
+		} else if(result && result.hasOwnProperty(keys[i])) {
+			result = result[keys[i]];
+		} else {
+			result = result[keys[i]] = {};
+		}
+	}
+
+	return has;
+}
+
+function has (object, path) {
+	var keys = path.split('.');
+
+	var i,
+			ii = keys.length,
+			has = false,
+			result = object;
+
+	for(i = 0; i < ii; i++) {
+		has = false;
+
+		if(result.hasOwnProperty(keys[i])) {
+			result = result[keys[i]];
+		} else {
+			break;
+		}
+
+		has = true;
+	}
+
+	return has;
+}
+
 function noop() {
 	return;
 }
@@ -156,9 +226,17 @@ function lazy(callback, context) {
 	};
 }
 
+function last(array) {
+	return array && array[0];
+}
+
 function bind(callback, context) {
+	var args = toArray(arguments).slice(1);
+
 	return function() {
-		return callback.apply(context, arguments);
+		args = args.concat(toArray(arguments));
+
+		return callback.apply(args[0], args.slice(1));
 	};
 }
 
@@ -225,7 +303,7 @@ function elementInheritedData(element, name, value) {
   if (element.nodeType == Node.DOCUMENT_NODE) {
     element = element.documentElement;
   }
-  
+
   var names = isArray(name) ? name : [name];
 
   while (element) {

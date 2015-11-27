@@ -44,5 +44,26 @@ EventEmitter.prototype = {
 		}
 
 		return false;
+	},
+
+	removeAllListeners: function() {
+		var eventNames = Object.keys(this._events);
+		var i,
+				j,
+				ii = eventNames.length,
+				jj,
+				events,
+				eventName;
+
+		for(i = 0; i < ii; i++) {
+			eventName = eventNames[i];
+			events = this._events[eventName];
+
+			jj = events.length;
+
+			for(j = 0; j < jj; j++) {
+				events.splice(j, 1);
+			}
+		}
 	}
 };

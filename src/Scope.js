@@ -1,8 +1,10 @@
 function Scope(parent) {
+	Watcher.call(this);
+
 	this.$parent = parent;
 }
 
-inherits(Scope, EventEmitter, {
+inherits(Scope, Watcher, {
 	$$createChildScopeClass: function() {
 		var parent = this;
 
@@ -26,8 +28,8 @@ inherits(Scope, EventEmitter, {
 			// Only create a child scope class if somebody asks for one,
       // but cache it to allow the VM to optimize lookups.
       if (!this.$$ChildScope) {
-        this.$$ChildScope = this.$$createChildScopeClass();
-      }
+        this.$$ChildScope = this.$$createChildScopeClass();		this.changingExpressions = [];
+			}
 
       child = new this.$$ChildScope();
 		}

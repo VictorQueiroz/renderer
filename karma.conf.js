@@ -18,6 +18,8 @@ module.exports = function(config) {
       'src/helpers.js',
       'src/renderer.js',
       'src/Scanner.js',
+      'src/EventEmitter.js',
+      'src/Watcher.js',
       'src/**/*.js',
       'test/**/*.js'
     ],
