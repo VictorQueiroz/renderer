@@ -7,9 +7,23 @@ function NodeLink(node, directives, attributes, context) {
 
 	this.context = context || {};
 	this.attributes = attributes;
-	this.directives = directives;
+	this.directives = directives || [];
 	this.transclude = null;
 	this.terminalPriority = -Number.MAX_VALUE;
+
+	if(node.nodeType === Node.TEXT_NODE) {
+		this.directives.push({
+			compile: function(node) {
+				return function(scope, node) {
+						var interpolate = new Interpolate(node.nodeValue);
+
+						scope.watchGroup(interpolate.exps, function() {
+							node.nodeValue = interpolate.compile(scope);
+						});
+				};
+			}
+		});
+	}
 }
 
 NodeLink.prototype = {
@@ -93,7 +107,7 @@ NodeLink.prototype = {
 
       //If only parents then start at the parent element
       if (inheritType === '^^') {
-        $element = $element.parent();
+        $element = $element.parentNode;
       //Otherwise attempt getting the controller from controllers in case
       //the element is transcluded (and has no data) and to avoid .data if possible
       } else {
@@ -145,7 +159,7 @@ NodeLink.prototype = {
 				directive,
 				controller,
 				controllers = {};
-		
+
 		for(i = 0; i < keys.length; i++) {
 			directive = this.context.controllers[keys[i]];
 

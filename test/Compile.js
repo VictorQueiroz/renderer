@@ -2,7 +2,7 @@ function search(node, callback) {
 	if(node instanceof Node === true) {
 		while(node) {
 			callback(node);
-			
+
 			if(node.childNodes instanceof NodeList === true) {
 				search(node.childNodes, callback);
 			}
@@ -23,6 +23,35 @@ describe('Compile', function() {
 
 	beforeEach(function() {
 		scope = new Scope();
+	});
+
+	it('should compile interpolated text', function() {
+		node = createNode(
+			'Hi! My name is, {{ user.name }}, and ' +
+			'I\'m {{ user.age }}... What about you?'
+		);
+
+		extend(scope.user = {}, {
+			name: 'John Cena',
+			age: 29
+		});
+
+		var compile = new Compile(node, directiveRegistry);
+		compile.execute(scope);
+
+		expect(node.outerHTML).toEqual(
+			'<div>Hi! My name is, John Cena, and ' +
+			'I\'m 29... What about you?</div>'
+		);
+
+		scope.user.age = 90;
+		scope.user.name = 'Uncle Bill';
+		scope.deliverChangeRecords();
+
+		expect(node.outerHTML).toEqual(
+			'<div>Hi! My name is, Uncle Bill, and ' +
+			'I\'m 90... What about you?</div>'
+		);
 	});
 
 	it('should recursively compile node directives', function() {
@@ -413,7 +442,7 @@ describe('Compile', function() {
 			expect(node.outerHTML).toEqual(
 				'<div><special><div><div transclude="titleSlot">' +
 				'<!-- title: undefined --><title class="a b c d" ' +
-				'compiled="true">This is the title of the app!</tit' + 
+				'compiled="true">This is the title of the app!</tit' +
 				'le></div><div transclude="contentSlot"><content>We ' +
 				'wrapped this content off, wow!</content></div></div' +
 				'></special></div>'

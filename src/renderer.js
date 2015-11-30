@@ -98,3 +98,54 @@ renderer.getDirectives = directiveRegistry.$$get;
 renderer.register = function(name, factory) {
 	return registerDirective(name, factory, directiveRegistry);
 };
+
+var expsCache = {};
+
+renderer.parse = function(exp, cache) {
+	if(expsCache.hasOwnProperty(exp) && isUndefined(cache)) {
+		return expsCache[exp];
+	}
+
+	var parser = new Parser(new Lexer());
+
+	return (expsCache[exp] = parser.parse(exp));
+};
+
+function createErrorService (service) {
+	return function(type, raw) {
+		var msg   = '';
+		var args  = toArray(arguments);
+		var vars  = args.slice(2);
+
+		var i, ii = raw.length;
+		var lastCh, ch, addCharacter = true;
+
+		for(i = 0; i < ii; i++) {
+			ch = raw.charCodeAt(i);
+
+			if(ch == 123 || ch == 125) {
+				if(lastCh == 123 && ch != 125) {
+					throw new Error('Expecting } at column ' + i);
+				}
+
+				lastCh = ch;
+			}
+
+			if(ch == 123) {
+				addCharacter = false;
+				msg += vars.shift();
+			}
+
+			if(ch == 125) {
+				addCharacter = true;
+				continue;
+			}
+
+			if(addCharacter) {
+				msg += raw[i];
+			}
+		}
+
+		return new Error(service + ' @ ' + type + ': ' + msg);
+	};
+}

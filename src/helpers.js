@@ -32,6 +32,17 @@ function clone (object) {
 	return cloned;
 }
 
+function values (object) {
+	var keys = Object.keys(object);
+	var i,
+			ii = keys.length,
+			values = [];
+	for(i = 0; i < ii; i++) {
+		values[i] = object[keys[i]];
+	}
+	return values;
+}
+
 function some(array, iterator, context) {
 	var i,
 			ii = array.length,
@@ -198,15 +209,24 @@ function defaults (object, source) {
 }
 
 function forEach (array, iterator, context) {
-	var keys = Object.keys(array);
-	var ii = keys.length, i, key, value;
+	var length;
 
-	for(i = 0; i < ii; i++) {
-		key = keys[i];
-		value = array[key];
+	if(isArray(array)) {
+		for(i = 0, length = array.length; i < length; i++) {
+			iterator.call(context, array[i], i, array);
+		}
+	} else {
+		var keys = Object.keys(array);
+		var ii = keys.length, i, key, value;
 
-		iterator.call(context, value, key, array);
+		for(i = 0; i < ii; i++) {
+			key = keys[i];
+			value = array[key];
+
+			iterator.call(context, value, key, array);
+		}
 	}
+	return array;
 }
 
 function camelCase (str) {

@@ -1,7 +1,7 @@
 /**
  * @constructor
  */
-function Parser (lexer, $filter, options) {
+function Parser (lexer, options) {
   this.lexer = lexer;
   this.options = options;
   this.ast = new AST(this.lexer);
