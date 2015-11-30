@@ -52,8 +52,10 @@ inherits(Watcher, EventEmitter, {
 	},
 
 	createObserver: function(objectPath) {
-		var scope = this, i;
-		var observer = new Observer(objectPath.indexOf('.') === -1 ? this[objectPath] : get(this, objectPath));
+		var i,
+				scope = this,
+				observer = new Observer(objectPath.indexOf('.') === -1 ? this[objectPath] : get(this, objectPath));
+
 		observer.on('updated', function() {
 			scope.emit('updated');
 		});
@@ -204,7 +206,8 @@ inherits(Watcher, EventEmitter, {
 	},
 
 	$watchCollection: function(exp, listener) {
-		var unwatchCollection = noop;
+		var scope = this,
+				unwatchCollection = noop;
 
 		if(this.isLiteralExpression(exp)) {
 			return listener.call(this, this.$eval(exp));
@@ -218,7 +221,9 @@ inherits(Watcher, EventEmitter, {
 			unwatchCollection();
 
 			if(isObject(value)) {
-				unwatchCollection = this.watchObject(exp, listener);
+				unwatchCollection = this.watchObject(exp, function() {
+					listener.call(scope, scope.eval(exp));
+				});
 			}
 
 			this.expressionChanged(exp);
