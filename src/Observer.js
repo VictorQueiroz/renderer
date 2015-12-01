@@ -171,16 +171,17 @@ inherits(Observer, EventEmitter, {
 	objectCache: [],
 
 	walkInto: function(object) {
-		var observer = this,
-				value,
+		var i = 0,
 				key,
+				value,
+				observer = this,
 				objectKeys = Object.keys(object);
 
 		objectKeys = objectKeys.filter(function(key) {
 			return observer.ignoredKeys.indexOf(key) === -1;
 		});
 
-		for(i = 0; i < objectKeys.length; i++) {
+		for(; i < objectKeys.length; i++) {
 			key = objectKeys[i];
 			value = object[key];
 
