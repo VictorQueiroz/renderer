@@ -9,6 +9,7 @@ function CompositeLink (nodeList, registry, options) {
 	this.registry = registry;
 
 	var i,
+			scanner,
 			nodeLink,
 			nodeLinks = [],
 			childLink,
