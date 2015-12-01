@@ -25,6 +25,47 @@ describe('Compile', function() {
 		scope = new Scope();
 	});
 
+	it('should compile a element twice without duplicating elements', function() {
+		scope.counter = 0;
+
+		node = createNode(
+			'<span>{{ someValueHere }}. And the counter is {{counter}}</span>'
+		);
+
+		renderer.register('div', function() {
+			return function(scope, el) {
+				scope.someValueHere = 'This is some value!';
+				el.appendChild(document.createElement('div'));
+
+				scope.counter += 1;
+			};
+		});
+
+		var link = renderer.compile(node);
+
+		link(scope);
+
+		scope.deliverChangeRecords();
+
+		expect(node.outerHTML).toEqual(
+			'<div><span>This is some value!. ' +
+			'And the counter is 1</span><div>' +
+			'</div></div>'
+		);
+
+		link(scope);
+		
+		scope.deliverChangeRecords();
+
+		expect(node.outerHTML).toEqual(
+			'<div><span>This is some value!. ' +
+			'And the counter is 2</span><div>' +
+			'</div></div>'
+		);
+
+		renderer.clearRegistry();
+	});
+
 	it('should recursively compile node directives', function() {
 		node = createNode(
 			'<div>' +

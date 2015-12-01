@@ -27,9 +27,13 @@ function Observer(object, parentObserver, property) {
 		this.deliverChangeRecords();
 	})
 	.on('changed', function(changes) {
-		var changedValue, changedProperty, childObserver;
+		var i = 0,
+				change,
+				changedValue,
+				childObserver,
+				changedProperty;
 
-		for(i = 0; i < changes.length; i++) {
+		for(; i < changes.length; i++) {
 			change 						= changes[i];
 			changedProperty 	= change.name;
 			changedValue 			= change.object[changedProperty];
