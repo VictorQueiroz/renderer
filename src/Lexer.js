@@ -223,7 +223,8 @@ Lexer.prototype = {
 
 	scanIdentifier: function() {
 		var start = this.index;
-		var id;
+		var id,
+				type;
 
 		// Backslash (U+005C) starts an escaped character.
 		id = (this.text.charCodeAt(this.index) === 0x5C) ? this.getComplexIdentifier() : this.getIdentifier();
