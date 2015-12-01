@@ -5,6 +5,7 @@ function Grammar(fn) {
 
   this.setCurrent(this.current_);
 }
+
 Grammar.prototype = {
   nextId: function (skip, init) {
     var id = 'v' + (this.nextId_++);

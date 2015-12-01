@@ -11,7 +11,7 @@ function NodeLink(node, directives, attributes, context) {
 	this.transclude = null;
 	this.terminalPriority = -Number.MAX_VALUE;
 
-	if(node.nodeType === Node.TEXT_NODE) {
+	if(this.node.nodeType === Node.TEXT_NODE) {
 		this.directives.push({
 			compile: function(node) {
 				return function(scope, node) {
