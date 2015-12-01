@@ -115,6 +115,19 @@ renderer.parse = function(exp, cache) {
 	return (expsCache[exp] = parser.parse(exp));
 };
 
+var templateCache = {};
+
+renderer.templateCache = function (path, value) {
+	if(isString(path)) {
+		if(!value) {
+			return templateCache[path];
+		}
+
+		templateCache[path] = value;
+	}
+	return null;
+};
+
 function createErrorService (service) {
 	return function(type, raw) {
 		var msg   = '';
