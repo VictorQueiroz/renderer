@@ -34,6 +34,23 @@ Compile.prototype = {
 	},
 
 	execute: function(scope, transcludeFn) {
+		if(this.node instanceof Node === true) {
+			if(!this._node) {
+				this._node = this.node.cloneNode(1);
+			} else {
+				var parent = this.node.parentNode;
+
+				if(parent) {
+					this.node.replaceChild(this._node, this.node);
+				}
+
+				this.node = this._node;
+				this.prepare();
+
+				this._node = this._node.cloneNode(1);
+			}
+		}
+
 		if(this.compositeLink) {
 			this.compositeLink.execute(scope, this.childLink, transcludeFn);
 		} else if(this.childLink) {
