@@ -235,6 +235,10 @@ function camelCase (str) {
   });
 }
 
+function kebabCase(str) {
+	return lowercase(str.replace(/[A-Z]/g, '-$&'));
+}
+
 function lowercase(str) {
 	return String(str).toLowerCase();
 }

@@ -54,7 +54,7 @@ describe('Compile', function() {
 		);
 
 		link(scope);
-		
+
 		scope.deliverChangeRecords();
 
 		expect(node.outerHTML).toEqual(
@@ -147,6 +147,30 @@ describe('Compile', function() {
 			expect(node.outerHTML).toEqual(
 				'<div>Hi! My name is, Uncle Bill, and ' +
 				'I\'m 90... What about you?</div>'
+			);
+		});
+
+		it('should interpolate node attributes', function() {
+			node = createNode(
+				'<span directive="{{ directiveValueHere }}"></span>'
+			);
+
+			renderer.compile(node)(scope);
+
+			scope.directiveValueHere = 'some-value-here';
+			scope.deliverChangeRecords();
+
+			expect(node.outerHTML).toEqual(
+				'<div><span directive="' +
+				'some-value-here"></span></div>'
+			);
+
+			scope.directiveValueHere = 'i-just-changed-this-value';
+			scope.deliverChangeRecords();
+
+			expect(node.outerHTML).toEqual(
+				'<div><span directive="' +
+				'i-just-changed-this-value"></span></div>'
 			);
 		});
 	});

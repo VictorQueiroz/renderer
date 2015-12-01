@@ -5,7 +5,7 @@
 function Scanner(node, registry, maxPriority) {
 	this.node = node;
 	this.registry = registry;
-	this.attributes = {},
+	this.attributes = new Attributes(this.node),
 	this.directives = [];
 	this.maxPriority = maxPriority;
 }
@@ -21,15 +21,18 @@ Scanner.prototype = {
 		var attributes = node.attributes;
 		var name,
 				i,
-				ii = attributes && attributes.length || 0;
+				j,
+				jj,
+				ii = attributes && attributes.length || 0,
+				classes;
 
 		this.add(this.normalize(node.nodeName), 'E');
 
 		for(i = 0; i < ii; i++) {
 			if(attributes[i].name == 'class') {
-				var classes = attributes[i].value.split(' ');
-				var j,
-						jj = classes.length;
+				classes = attributes[i].value.split(' ');
+				jj = classes.length;
+
 				for(j = 0; j < jj; j++) {
 					this.add(this.normalize(classes[j]), 'C');
 				}
@@ -37,8 +40,8 @@ Scanner.prototype = {
 
 			name = this.normalize(attributes[i].name);
 
+			this.interpolate(name, attributes[i].value);
 			this.attributes[name] = attributes[i].value;
-
 			this.add(name, 'A');
 		}
 
@@ -53,6 +56,25 @@ Scanner.prototype = {
     });
 
 		return this.directives;
+	},
+
+	interpolate: function(name, value) {
+		this.directives.push({
+			priority: 100,
+			compile: function() {
+				return {
+					pre: function(scope, element, attrs) {
+						var interpolate = new Interpolate(value);
+
+						if(interpolate.exps.length === 0) return;
+
+						scope.watchGroup(interpolate.exps, function() {
+							attrs.$set(name, interpolate.compile(scope));
+						});
+					}
+				};
+			}
+		});
 	},
 
 	add: function(name, restrict) {
@@ -85,6 +107,6 @@ Scanner.prototype = {
 	},
 
 	clearPriority: function() {
-		delete this.maxPriority;	
+		delete this.maxPriority;
 	}
 };

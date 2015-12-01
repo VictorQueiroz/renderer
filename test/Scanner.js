@@ -4,6 +4,30 @@ var createNode = function(html) {
 	return div;
 };
 
+var getNodeAttributesLength = function(node, length, deep) {
+	var i = 0;
+
+	length = length || 0;
+
+	for(; i < node.childNodes.length; i++) {
+		if(node.nodeType != Node.ELEMENT_NODE) {
+			continue;
+		}
+
+		length += node.childNodes[i].attributes.length;
+
+		if(deep) {
+			length += getNodeAttributesLength(node.childNodes[i], length, deep);
+		}
+	}
+
+	if(node.nextSibling && deep) {
+		length += getNodeAttributesLength(node.nextSibling, length, deep);
+	}
+
+	return length;
+};
+
 describe('Scanner', function() {
 	var scanner;
 	var node = createNode(
@@ -18,7 +42,7 @@ describe('Scanner', function() {
 		});
 
 		scanner = new Scanner(node.childNodes[0], directiveRegistry);
-		expect(scanner.scan().length).toBe(1);
+		expect(scanner.scan().length).toBe(1 + getNodeAttributesLength(node, 0, false));
 
 		renderer.clearRegistry();
 	});
