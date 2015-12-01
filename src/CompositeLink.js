@@ -23,13 +23,13 @@ function CompositeLink (nodeList, registry, options) {
 		directives = scanner.scan();
 		attributes = scanner.attributes;
 
+		nodeLink = new NodeLink(nodeList[i], directives, attributes);
+		nodeLink.prepare(registry);
+
 		hasChildNodes = nodeList[i].childNodes &&
 										nodeList[i].childNodes.length > 0 &&
 										nodeList[i].childNodes ||
 										0;
-
-		nodeLink = new NodeLink(nodeList[i], directives, attributes);
-		nodeLink.prepare(registry);
 
 		childLink = new Compile(hasChildNodes ? nodeList[i].childNodes : [], this.registry, this.options);
 

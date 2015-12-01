@@ -25,35 +25,6 @@ describe('Compile', function() {
 		scope = new Scope();
 	});
 
-	it('should compile interpolated text', function() {
-		node = createNode(
-			'Hi! My name is, {{ user.name }}, and ' +
-			'I\'m {{ user.age }}... What about you?'
-		);
-
-		extend(scope.user = {}, {
-			name: 'John Cena',
-			age: 29
-		});
-
-		var compile = new Compile(node, directiveRegistry);
-		compile.execute(scope);
-
-		expect(node.outerHTML).toEqual(
-			'<div>Hi! My name is, John Cena, and ' +
-			'I\'m 29... What about you?</div>'
-		);
-
-		scope.user.age = 90;
-		scope.user.name = 'Uncle Bill';
-		scope.deliverChangeRecords();
-
-		expect(node.outerHTML).toEqual(
-			'<div>Hi! My name is, Uncle Bill, and ' +
-			'I\'m 90... What about you?</div>'
-		);
-	});
-
 	it('should recursively compile node directives', function() {
 		node = createNode(
 			'<div>' +
@@ -79,6 +50,64 @@ describe('Compile', function() {
 		});
 
 		renderer.clearRegistry();
+	});
+
+	describe('Interpolation', function() {
+		it('should compile interpolation on synchronous templated directives', function() {
+			node = createNode(
+				'<component></component>'
+			);
+
+			scope.name = 'Laurel';
+
+			var linkSpy = jasmine.createSpy();
+			renderer.register('component', function() {
+				return {
+					template: 'Hey, {{name}}!',
+					link: linkSpy
+				};
+			});
+
+			renderer.compile(node)(scope);
+
+			expect(linkSpy).toHaveBeenCalled();
+			expect(node.outerHTML).toEqual(
+				'<div><component>' +
+				'Hey, Laurel!' +
+				'</component></div>'
+			);
+
+			renderer.clearRegistry();
+		});
+
+		it('should compile interpolated text', function() {
+			node = createNode(
+				'Hi! My name is, {{ user.name }}, and ' +
+				'I\'m {{ user.age }}... What about you?'
+			);
+
+			extend(scope.user = {}, {
+				name: 'John Cena',
+				age: 29
+			});
+
+			var compile = new Compile(node, directiveRegistry);
+			compile.execute(scope);
+
+			expect(node.outerHTML).toEqual(
+				'<div>Hi! My name is, John Cena, and ' +
+				'I\'m 29... What about you?</div>'
+			);
+
+			scope.user.age = 90;
+			scope.user.name = 'Uncle Bill';
+			scope.deliverChangeRecords();
+
+			expect(node.outerHTML).toEqual(
+				'<div>Hi! My name is, Uncle Bill, and ' +
+				'I\'m 90... What about you?</div>'
+			);
+		});
 	});
 
 	describe('Priority', function() {
