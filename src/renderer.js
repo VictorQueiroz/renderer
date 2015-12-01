@@ -1,3 +1,7 @@
+var global = window;
+
+var renderer = {};
+
 var directiveRegistry = {
 	$$get: function(name) {
 		return getFromRegistry(name, directiveRegistry);
@@ -149,3 +153,28 @@ function createErrorService (service) {
 		return new Error(service + ' @ ' + type + ': ' + msg);
 	};
 }
+
+renderer.compile = function(node) {
+	var compile = new Compile(node, directiveRegistry);
+
+	return function(scope) {
+		return compile.execute(scope);
+	};
+};
+
+extend(renderer, {
+	Scope: Scope,
+	Compile: Compile,
+	_registry: directiveRegistry
+});
+
+global.renderer = renderer;
+
+renderer.prototype = {
+	__elementCache: {},
+
+	__cacheKey: '$$$rt339'
+};
+
+var elCache = renderer.prototype.__elementCache;
+var cacheKey = renderer.prototype.__cacheKey;

@@ -1,4 +1,3 @@
-var renderer = {};
 var isArray = Array.isArray;
 
 function toArray(target) {
@@ -285,15 +284,6 @@ var id = 0;
 function nextId() {
 	return ++id;
 }
-
-renderer.prototype = {
-	__elementCache: {},
-
-	__cacheKey: '$$$rt339'
-};
-
-var elCache = renderer.prototype.__elementCache;
-var cacheKey = renderer.prototype.__cacheKey;
 
 function elementData(node, key, value) {
 	if(!node.hasOwnProperty(cacheKey)) {
