@@ -94,6 +94,95 @@ describe('Compile', function() {
 		renderer.clearRegistry();
 	});
 
+	describe('Restrict', function() {
+		it('should render class defined directives', function() {
+			var links = 0;
+
+			node = createNode(
+				'<div class="change-color-directive" change-color-directive></div>'
+			);
+
+			renderer.register('changeColorDirective', function() {
+				return {
+					restrict: 'C',
+					link: function(scope, el) {
+						el.style.backgroundColor = '#fff';
+						links++;
+					}
+				};
+			});
+
+			renderer.compile(node)(scope);
+
+			expect(links).toEqual(1);
+			expect(node.outerHTML).toEqual(
+				'<div><div class="change-color-directive" ' +
+				'change-color-directive="" style="background-color: ' +
+				'rgb(255, 255, 255);"></div></div>'
+			);
+
+			renderer.clearRegistry();
+		});
+
+		it('should render attribute defined directives', function() {
+			var links = 0;
+
+			node = createNode(
+				'<div class="change-color-directive" change-color-directive></div>'
+			);
+
+			renderer.register('changeColorDirective', function() {
+				return {
+					restrict: 'A',
+					link: function(scope, el) {
+						el.style.backgroundColor = '#fff';
+						links++;
+					}
+				};
+			});
+
+			renderer.compile(node)(scope);
+
+			expect(links).toEqual(1);
+			expect(node.outerHTML).toEqual(
+				'<div><div class="change-color-directive" ' +
+				'change-color-directive="" style="background-color: ' +
+				'rgb(255, 255, 255);"></div></div>'
+			);
+
+			renderer.clearRegistry();
+		});
+
+		it('should render node name defined directives', function() {
+			var links = 0;
+
+			node = createNode(
+				'<change-color-directive class="change-color-directive" change-color-directive></change-color-directive>'
+			);
+
+			renderer.register('changeColorDirective', function() {
+				return {
+					restrict: 'E',
+					link: function(scope, el) {
+						el.style.backgroundColor = '#fff';
+						links++;
+					}
+				};
+			});
+
+			renderer.compile(node)(scope);
+
+			expect(links).toEqual(1);
+			expect(node.outerHTML).toEqual(
+				'<div><change-color-directive class="change-color-directive"' +
+				' change-color-directive="" style="background-color: rgb(255, ' +
+				'255, 255);"></change-color-directive></div>'
+			);
+
+			renderer.clearRegistry();
+		});
+	});
+
 	describe('Multi Element', function() {
 		it('should get all the elements and put in a group', function() {
 			node = createNode(
