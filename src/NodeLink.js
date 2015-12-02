@@ -5,6 +5,7 @@ function NodeLink(node, directives, attributes, context) {
 		pre: []
 	};
 
+	this.scope = null;
 	this.context = context || {};
 	this.attributes = attributes;
 	this.directives = directives || [];
@@ -26,7 +27,14 @@ function NodeLink(node, directives, attributes, context) {
 	}
 }
 
+extend(NodeLink, {
+	SCOPE_CHILD: 1,
+	SCOPE_ISOLATED: 2
+});
+
 NodeLink.prototype = {
+	constructor: NodeLink,
+
 	/**
 	 * Given a node with an directive-start it collects all of the siblings until it finds
 	 * directive-end.
@@ -80,11 +88,29 @@ NodeLink.prototype = {
 			attrStart = directive.$$start;
 			attrEnd = directive.$$end;
 
+			// collect multi elements
 			if(attrStart) {
 				this.node = this.group(attrStart, attrEnd);
 			}
 
-      if(!directive.templateUrl && directive.controller) {
+			if(directive.hasOwnProperty('scope') && directive.scope) {
+				// This directive is trying to add an isolated scope.
+        // Check that there is no scope of any kind already
+				if(isObject(directive.scope)) {
+					if(this.scope) {
+						throw new Error(
+							'You can\'t define a new isolated ' +
+							'scope on a node that already has a ' +
+							'child scope defined'
+						);
+					}
+					this.scope = NodeLink.SCOPE_ISOLATED;
+				} else if (isBoolean(directive.scope)) {
+					this.scope = NodeLink.SCOPE_CHILD;
+				}
+			}
+
+      if(directive.controller) {
       	// The list of all the
       	// directives controllers.
       	context.controllers = context.controllers || {};
@@ -225,6 +251,15 @@ NodeLink.prototype = {
 			this.transcludeFn = this.transclude.getTranscludeCallback(scope);
 		} else if (!this.transcludeFn && isFunction(transcludeFn)) {
 			this.transcludeFn = transcludeFn;
+		}
+
+		switch(this.scope) {
+		case NodeLink.SCOPE_CHILD:
+			scope = scope.$new();
+			break;
+		case NodeLink.SCOPE_ISOLATED:
+			scope = scope.$new(true);
+			break;
 		}
 
 		if(this.context.controllers) {

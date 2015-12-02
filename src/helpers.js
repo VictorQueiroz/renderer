@@ -8,6 +8,10 @@ function isUndefined(target) {
 	return typeof target === 'undefined';
 }
 
+function isBoolean(target) {
+	return typeof target === 'boolean';
+}
+
 function isDefined(target) {
 	return isUndefined(target) === false;
 }

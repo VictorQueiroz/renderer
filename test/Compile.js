@@ -94,6 +94,64 @@ describe('Compile', function() {
 		renderer.clearRegistry();
 	});
 
+	describe('Scope', function() {
+		it('should keep the scope until the end of the dom tree', function() {
+			node = createNode('');
+
+			var i = 0,
+					scopeSpy = jasmine.createSpy(),
+					lastNode = node;
+			for(;i < 10; i++) {
+				lastNode.appendChild(lastNode = document.createElement('div'));
+			}
+
+			renderer.register('div', function() {
+				return {
+					terminal: true,
+					priority: 1000,
+					link: function(scope, el) {
+						scopeSpy(scope);
+					}
+				};
+			});
+			renderer.compile(node)(scope);
+
+			expect(scopeSpy).toHaveBeenCalledWith(scope);
+
+			renderer.clearRegistry();
+		});
+
+		it('should create a new child scope if asked', function() {
+			var scopeSpy = jasmine.createSpy();
+
+			node = createNode('');
+			scope.someDeepProperty = {
+				but: {
+					shouldBeOnChildScope: 1
+				}
+			}
+
+			renderer.register('div', function() {
+				return {
+					scope: true,
+					link: function(scope) {
+						expect(scope).not.toBe(scope.$parent);
+						expect(scope instanceof scope.$parent.$$ChildScope).toBeTruthy();
+						expect(scope.someDeepProperty.but.shouldBeOnChildScope).toEqual(1);
+
+						scopeSpy(scope);
+					}
+				}
+			});
+
+			renderer.compile(node)(scope);
+
+			expect(scopeSpy).toHaveBeenCalled();
+
+			renderer.clearRegistry();
+		});
+	});
+
 	describe('Restrict', function() {
 		it('should render class defined directives', function() {
 			var links = 0;
