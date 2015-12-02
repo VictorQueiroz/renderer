@@ -11,38 +11,70 @@ function Scanner(node, registry, maxPriority) {
 }
 
 Scanner.prototype = {
+	/**
+	 * Check if a set of directives is
+	 * multi element
+	 */
+	isMultiElement: function(name) {
+		var i = 0,
+				ii,
+				directive,
+				directives;
+
+		if((directives = this.registry.$$get(name))) {
+			for(ii = directives.length; i < ii; i++) {
+				directive = directives[i];
+
+				if(directive.multiElement) {
+					return true;
+				}
+			}
+		}
+		return false;
+	},
+
 	scan: function() {
 		if(this.directives.length) {
 			this.directives = [];
 		}
 
-		var node = this.node;
+		var MULTI_ELEMENT_DIR_RE = /^(.+)Start$/;
 
+		var node = this.node;
 		var attributes = node.attributes;
-		var name,
-				i,
+		var i,
 				j,
 				jj,
 				ii = attributes && attributes.length || 0,
-				classes;
+				name = this.normalize(node.nodeName),
+				classes,
+				attrStartName,
+				attrEndName;
 
-		this.add(this.normalize(node.nodeName), 'E');
+		this.add(name, 'E');
 
 		for(i = 0; i < ii; i++) {
-			if(attributes[i].name == 'class') {
-				classes = attributes[i].value.split(' ');
-				jj = classes.length;
-
-				for(j = 0; j < jj; j++) {
-					this.add(this.normalize(classes[j]), 'C');
-				}
-			}
-
 			name = this.normalize(attributes[i].name);
+
+			var multiElementMatch = name.match(MULTI_ELEMENT_DIR_RE);
+			if(multiElementMatch && this.isMultiElement(multiElementMatch[1])) {
+				attrStartName = attributes[i].name;
+				attrEndName = attributes[i].name.substr(0, name.length - 3) + 'end';
+				name = name.substring(0, name.length - 5);
+			}
 
 			this.interpolate(name, attributes[i].value);
 			this.attributes[name] = attributes[i].value;
-			this.add(name, 'A');
+			this.add(name, 'A', attrStartName, attrEndName);
+		}
+
+		if(node.nodeType == Node.ELEMENT_NODE) {
+			classes = node.className.split(' ');
+			jj = classes.length;
+
+			for(j = 0; j < jj; j++) {
+				this.add(this.normalize(classes[j]), 'C');
+			}
 		}
 
 		/**
@@ -66,7 +98,9 @@ Scanner.prototype = {
 					pre: function(scope, element, attrs) {
 						var interpolate = new Interpolate(value);
 
-						if(interpolate.exps.length === 0) return;
+						if(interpolate.exps.length === 0) {
+							return;
+						}
 
 						scope.watchGroup(interpolate.exps, function() {
 							attrs.$set(name, interpolate.compile(scope));
@@ -77,7 +111,7 @@ Scanner.prototype = {
 		});
 	},
 
-	add: function(name, restrict) {
+	add: function(name, restrict, startAttrName, endAttrName) {
 		var directives = this.registry.$$get(name);
 		var maxPriority = this.maxPriority;
 
@@ -94,8 +128,15 @@ Scanner.prototype = {
 
 			if(directive.restrict.indexOf(restrict) === -1 ||
 				(isDefined(maxPriority) && !(directive.priority > maxPriority))) {
-				this.clearPriority();
+				delete this.maxPriority;
 				continue;
+			}
+
+			if(startAttrName) {
+				directive = inherit(directive, {
+					$$start: startAttrName,
+					$$end: endAttrName
+				});
 			}
 
 			this.directives.push(directive);
@@ -104,9 +145,5 @@ Scanner.prototype = {
 
 	normalize: function(name) {
 		return camelCase(name);
-	},
-
-	clearPriority: function() {
-		delete this.maxPriority;
 	}
 };

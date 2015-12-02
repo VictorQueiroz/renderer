@@ -29,7 +29,8 @@ describe('Compile', function() {
 		scope.counter = 0;
 
 		node = createNode(
-			'<span>{{ someValueHere }}. And the counter is {{counter}}</span>'
+			'<span>{{ someValueHere }}. And ' +
+			'the counter is {{counter}}</span>'
 		);
 
 		renderer.register('div', function() {
@@ -91,6 +92,56 @@ describe('Compile', function() {
 		});
 
 		renderer.clearRegistry();
+	});
+
+	describe('Multi Element', function() {
+		it('should get all the elements and put in a group', function() {
+			node = createNode(
+				'<div rd-show-start="shouldShowMe"></div>' +
+				'<div>' +
+					'<span>{{ counter }}</span>' +
+				'</div>' +
+				'<div rd-show-end></div>'
+			);
+
+			scope.counter = 0;
+			scope.shouldShowMe = true;
+
+			renderer.register('rdShow', function() {
+				return {
+					multiElement: true,
+					link: function(scope, el, attrs) {
+						var method;
+
+						scope.$watch(attrs.rdShow, function(value) {
+							method = value ? 'remove' : 'add';
+
+							el.classList[method]('hide');
+							scope.counter++;
+						});
+					}
+				};
+			});
+			renderer.compile(node)(scope);
+
+			expect(node.outerHTML).toEqual(
+				'<div><div rd-show-start="shouldShowMe">' +
+				'</div><div><span>1</span></div><div rd-' +
+				'show-end=""></div></div>'
+			);
+
+			scope.shouldShowMe = false;
+			scope.deliverChangeRecords();
+
+			expect(node.outerHTML).toEqual(
+				'<div><div rd-show-start="shouldShowMe" ' +
+				'class="hide"></div><div class="hide">' +
+				'<span>2</span></div><div rd-show-end="" ' +
+				'class="hide"></div></div>'
+			);
+
+			renderer.clearRegistry();
+		});
 	});
 
 	describe('Interpolation', function() {

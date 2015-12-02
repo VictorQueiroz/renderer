@@ -12,6 +12,14 @@ function isDefined(target) {
 	return isUndefined(target) === false;
 }
 
+function inherit(parent, extra) {
+  return extend(Object.create(parent), extra);
+}
+
+function first(array) {
+	return array[0];
+}
+
 function clone (object) {
 	var keys = Object.keys(object);
 	var i, ii = keys.length, key, value;

@@ -15,11 +15,11 @@ function NodeLink(node, directives, attributes, context) {
 		this.directives.push({
 			compile: function(node) {
 				return function(scope, node) {
-						var interpolate = new Interpolate(node.nodeValue);
+					var interpolate = new Interpolate(node.nodeValue);
 
-						scope.watchGroup(interpolate.exps, function() {
-							node.nodeValue = interpolate.compile(scope);
-						});
+					scope.watchGroup(interpolate.exps, function() {
+						node.nodeValue = interpolate.compile(scope);
+					});
 				};
 			}
 		});
@@ -27,11 +27,47 @@ function NodeLink(node, directives, attributes, context) {
 }
 
 NodeLink.prototype = {
+	/**
+	 * Given a node with an directive-start it collects all of the siblings until it finds
+	 * directive-end.
+	 * @param node
+	 * @param attrStart
+	 * @param attrEnd
+	 * @returns {*}
+	 */
+	group: function(attrStart, attrEnd) {
+    var node = this.node,
+				nodes = [],
+				depth = 0;
+
+    if (attrStart && node.hasAttribute && node.hasAttribute(attrStart)) {
+      do {
+        if (!node) {
+          throw $compileMinErr('uterdir',
+                    "Unterminated attribute, found '{0}' but no matching '{1}' found.",
+                    attrStart, attrEnd);
+        }
+        if (node.nodeType == Node.ELEMENT_NODE) {
+          if (node.hasAttribute(attrStart)) depth++;
+          if (node.hasAttribute(attrEnd)) depth--;
+        }
+        nodes.push(node);
+        node = node.nextSibling;
+      } while (depth > 0);
+    } else {
+      nodes.push(node);
+    }
+
+    return new NodeGroup(nodes);
+	},
+
 	prepare: function(registry) {
 		var i,
 				ii = this.directives.length,
 				options,
 				context = this.context,
+				attrEnd,
+				attrStart,
 				directive;
 
 		for(i = 0; i < ii; i++) {
@@ -40,6 +76,13 @@ NodeLink.prototype = {
 			if (this.terminalPriority > directive.priority) {
         break; // prevent further processing of directives
       }
+
+			attrStart = directive.$$start;
+			attrEnd = directive.$$end;
+
+			if(attrStart) {
+				this.node = this.group(attrStart, attrEnd);
+			}
 
       if(!directive.templateUrl && directive.controller) {
       	// The list of all the
