@@ -11,7 +11,7 @@ bower install --save renderer
 	<title>Last posts</title>
 	<content>
 		<div class="posts-list" nd-repeat="post in posts">
-			{{post}}
+			<a nd-href="{{post.href}}">{{post.title}}</a>
 		</div>
 	</content>
 </widget>
