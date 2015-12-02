@@ -26,12 +26,12 @@ inherits(Scope, Watcher, {
 			child = new Scope();
 		} else {
 			// Only create a child scope class if somebody asks for one,
-      // but cache it to allow the VM to optimize lookups.
-      if (!this.$$ChildScope) {
-        this.$$ChildScope = this.$$createChildScopeClass();		this.changingExpressions = [];
+			// but cache it to allow the VM to optimize lookups.
+			if (!this.$$ChildScope) {
+				this.$$ChildScope = this.$$createChildScopeClass();		this.changingExpressions = [];
 			}
 
-      child = new this.$$ChildScope();
+			child = new this.$$ChildScope();
 		}
 
 		return child;

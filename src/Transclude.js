@@ -63,8 +63,8 @@ function Transclude(node, options) {
 			slotNames[key] = slotName;
 			slots[slotName] = document.createDocumentFragment();
 			// filledSlots contains `true` for all slots that are either optional or have been
-      // filled. This is used to check that we have not missed any required slots
-      filledSlots[slotName] = optional;
+			// filled. This is used to check that we have not missed any required slots
+			filledSlots[slotName] = optional;
 		}
 
 		// Add the matching elements into their slot

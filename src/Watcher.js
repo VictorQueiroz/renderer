@@ -6,9 +6,9 @@ function Watcher () {
 	this.changingExpressions = [];
 }
 inherits(Watcher, EventEmitter, {
-  eval: function(exp) {
-    return get(this, exp);
-  },
+	eval: function(exp) {
+		return get(this, exp);
+	},
 
 	watchObject: function (exp, listener) {
 		var scope = this;
@@ -138,28 +138,28 @@ inherits(Watcher, EventEmitter, {
 
 	expressionChanged: function(exp) {
 		if(this.changingExpressions.indexOf(exp) === -1) {
-  		this.changingExpressions.push(exp);
+			this.changingExpressions.push(exp);
 
-  		var scope = this;
-  		var listeners = this.watchers[exp].listeners;
-  		var i;
+			var scope = this;
+			var listeners = this.watchers[exp].listeners;
+			var i;
 
-  		for(i = 0; i < listeners.length; i++) {
-  			listeners[i].call(this, get(this, exp));
-  		}
+			for(i = 0; i < listeners.length; i++) {
+				listeners[i].call(this, get(this, exp));
+			}
 
-  		var observerListeners;
+			var observerListeners;
 
-  		if(this.observers.hasOwnProperty(exp)) {
-  			observerListeners = this.observers[exp].listeners;
+			if(this.observers.hasOwnProperty(exp)) {
+				observerListeners = this.observers[exp].listeners;
 
-  			forEach(observerListeners, function(listener) {
-  				listener.call(scope, scope.eval(exp));
-  			});
-  		}
+				forEach(observerListeners, function(listener) {
+					listener.call(scope, scope.eval(exp));
+				});
+			}
 
-  		this.changingExpressions.pop();
-    }
+			this.changingExpressions.pop();
+		}
 	},
 
 	complexExpressionSymbols: '[]()&;!==`;'.split(''),

@@ -78,14 +78,14 @@ Scanner.prototype = {
 		}
 
 		/**
-     * Sorting function for bound directives.
-     */
-    this.directives.sort(function (a, b) {
-      var diff = b.priority - a.priority;
-      if (diff !== 0) return diff;
-      if (a.name !== b.name) return (a.name < b.name) ? -1 : 1;
-      return a.index - b.index;
-    });
+		 * Sorting function for bound directives.
+		 */
+		this.directives.sort(function (a, b) {
+			var diff = b.priority - a.priority;
+			if (diff !== 0) return diff;
+			if (a.name !== b.name) return (a.name < b.name) ? -1 : 1;
+			return a.index - b.index;
+		});
 
 		return this.directives;
 	},

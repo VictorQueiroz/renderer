@@ -28,8 +28,8 @@ function Interpolate(text, startSymbol, endSymbol) {
 		if(((startIndex = text.indexOf(startSymbol, index)) > -1) &&
 			 ((endIndex = text.indexOf(endSymbol, startIndex + startSymbolLength)) > -1)) {
 		 if (index !== startIndex) {
-       concat.push(text.substring(index, startIndex));
-     }
+			 concat.push(text.substring(index, startIndex));
+		 }
 
 			exp = text.substring(startIndex + startSymbolLength, endIndex).trim();
 
@@ -41,9 +41,9 @@ function Interpolate(text, startSymbol, endSymbol) {
 			index = endIndex + endSymbolLength;
 		} else {
 			// we did not find an interpolation, so we have to add the remainder to the separators array
-      if (index !== text.length) {
-        concat.push(text.substring(index));
-      }
+			if (index !== text.length) {
+				concat.push(text.substring(index));
+			}
 			break;
 		}
 	}
@@ -62,10 +62,10 @@ Interpolate.prototype = {
 				concat = this.concat,
 				expressionPositions = this.expressionPositions;
 
-    for (var i = 0, ii = exps.length; i < ii; i++) {
-      concat[expressionPositions[i]] = values[i];
-    }
-    return concat.join('');
+		for (var i = 0, ii = exps.length; i < ii; i++) {
+			concat[expressionPositions[i]] = values[i];
+		}
+		return concat.join('');
 	},
 
 	compile: function(context) {

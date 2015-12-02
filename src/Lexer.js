@@ -21,24 +21,24 @@ Lexer.prototype = {
 				this.scanIdentifier();
 			} else if (ch === 0x28 || ch === 0x29 || ch === 0x3B) {
 				// Very common: ( and ) and ;
-        this.scanPunctuator();
-      } else if(ch === 0x27 || ch === 0x22) {
+				this.scanPunctuator();
+			} else if(ch === 0x27 || ch === 0x22) {
 				// String literal starts with single quote (U+0027) or double quote (U+0022).
 				this.scanStringLiteral();
 			} else if (ch === 0x2E) {
 				// Dot (.) U+002E can also start a floating-point number, hence the need
-        // to check the next character.
-        if(this.isDecimalDigit(this.text.charCodeAt(this.index + 1))) {
-        	this.scanNumericLiteral();
-        } else {
-        	this.scanPunctuator();
-        }
+				// to check the next character.
+				if(this.isDecimalDigit(this.text.charCodeAt(this.index + 1))) {
+					this.scanNumericLiteral();
+				} else {
+					this.scanPunctuator();
+				}
 			} else if (this.isDecimalDigit(ch)) {
 				this.scanNumericLiteral();
 			} else if (ch === 0x60 || (ch === 0x7D && this.curlyStack[this.curlyStack.length - 1] === '${')) {
 				// Template literals start with ` (U+0060) for template head
-        // or } (U+007D) for template middle or template tail.
-        this.scanTemplate();
+				// or } (U+007D) for template middle or template tail.
+				this.scanTemplate();
 			} else {
 				this.scanPunctuator();
 			}
@@ -52,7 +52,7 @@ Lexer.prototype = {
 	},
 
 	isDecimalDigit: function (ch) {
-	  return (ch >= 0x30 && ch <= 0x39);   // 0..9
+		return (ch >= 0x30 && ch <= 0x39);   // 0..9
 	},
 
 	isIdentifierPart: function(ch) {
@@ -155,33 +155,33 @@ Lexer.prototype = {
 			ch = this.text[this.index];
 
 			// Hex number starts with '0x'.
-      // Octal number starts with '0'.
-      // Octal number in ES6 starts with '0o'.
-      // Binary number in ES6 starts with '0b'.
-      if(number === '0') {
-      	if(ch === 'x' || ch === 'X') {
-      		++this.index;
-      		return this.scanHexLiteral(start);
-      	}
-      	if(ch === 'b' || ch === 'B') {
-      		++this.index;
-      		return this.scanBinaryLiteral(start);
-      	}
-      	if(ch === 'o' || ch === 'O') {
-      		return this.scanOctalLiteral(ch, start);
-      	}
+			// Octal number starts with '0'.
+			// Octal number in ES6 starts with '0o'.
+			// Binary number in ES6 starts with '0b'.
+			if(number === '0') {
+				if(ch === 'x' || ch === 'X') {
+					++this.index;
+					return this.scanHexLiteral(start);
+				}
+				if(ch === 'b' || ch === 'B') {
+					++this.index;
+					return this.scanBinaryLiteral(start);
+				}
+				if(ch === 'o' || ch === 'O') {
+					return this.scanOctalLiteral(ch, start);
+				}
 
-      	if(this.isOctalDigit(ch)) {
-      		if(this.isImplicitOctalLiteral()) {
-      			return this.scanOctalLiteral(ch, start);
-      		}
-      	}
-      }
+				if(this.isOctalDigit(ch)) {
+					if(this.isImplicitOctalLiteral()) {
+						return this.scanOctalLiteral(ch, start);
+					}
+				}
+			}
 
-      while(this.isDecimalDigit(this.text.charCodeAt(this.index))) {
-      	number += this.text[this.index++];
-      }
-      ch = this.text[this.index];
+			while(this.isDecimalDigit(this.text.charCodeAt(this.index))) {
+				number += this.text[this.index++];
+			}
+			ch = this.text[this.index];
 		}
 
 		if(ch === '.') {
@@ -214,10 +214,10 @@ Lexer.prototype = {
 		}
 
 		this.tokens.push({
-		  type: Token.NumericLiteral,
-		  value: parseFloat(number),
-		  start: start,
-		  end: this.index
+			type: Token.NumericLiteral,
+			value: parseFloat(number),
+			start: start,
+			end: this.index
 		});
 	},
 
@@ -230,23 +230,23 @@ Lexer.prototype = {
 		id = (this.text.charCodeAt(this.index) === 0x5C) ? this.getComplexIdentifier() : this.getIdentifier();
 
 		// There is no keyword or literal with only one character.
-    // Thus, it must be an identifier.
-    if(id.length === 1) {
-    	type = Token.Identifier;
-    } else if (id === 'null') {
-    	type = Token.NullLiteral;
-    } else if (id === 'true' || id === 'false') {
-    	type = Token.BooleanLiteral;
-    } else {
-    	type = Token.Identifier;
-    }
+		// Thus, it must be an identifier.
+		if(id.length === 1) {
+			type = Token.Identifier;
+		} else if (id === 'null') {
+			type = Token.NullLiteral;
+		} else if (id === 'true' || id === 'false') {
+			type = Token.BooleanLiteral;
+		} else {
+			type = Token.Identifier;
+		}
 
-    this.tokens.push({
-    	type: type,
-      value: id,
-      start: start,
-      end: this.index
-    });
+		this.tokens.push({
+			type: type,
+			value: id,
+			start: start,
+			end: this.index
+		});
 	},
 
 	// Ensure the condition is true, otherwise throw an error.
@@ -255,10 +255,10 @@ Lexer.prototype = {
 	// Do NOT use this to enforce a certain condition on any user input.
 
 	assert: function (condition, message) {
-	  /* istanbul ignore if */
-	  if (!condition) {
-	    throw new Error('ASSERT: ' + message);
-	  }
+		/* istanbul ignore if */
+		if (!condition) {
+			throw new Error('ASSERT: ' + message);
+		}
 	},
 
 	eof: function() {
@@ -277,9 +277,9 @@ Lexer.prototype = {
 	scanPunctuator: function() {
 		var token = {
 			type: Token.Punctuator,
-      value: '',
-      start: this.index,
-      end: this.index
+			value: '',
+			start: this.index,
+			end: this.index
 		};
 
 		// Check for most common single-character punctuators.
@@ -306,13 +306,13 @@ Lexer.prototype = {
 				break;
 			case '(':
 			case ')':
-      case ';':
-      case ',':
-      case '[':
-      case ']':
-      case ':':
-      case '?':
-      case '~':
+			case ';':
+			case ',':
+			case '[':
+			case ']':
+			case ':':
+			case '?':
+			case '~':
 				++this.index;
 				break;
 			default:
@@ -324,16 +324,16 @@ Lexer.prototype = {
 					// 3-character punctuators.
 					str = str.substr(0, 3);
 					if (str === '===' || str === '!==' || str === '>>>' ||
-              str === '<<=' || str === '>>=') {
+							str === '<<=' || str === '>>=') {
 						this.index += 3;
 					} else {
 						// 2-character punctuators.
 						str = str.substr(0, 2);
 						if (str === '&&' || str === '||' || str === '==' || str === '!=' ||
-                str === '+=' || str === '-=' || str === '*=' || str === '/=' ||
-                str === '++' || str === '--' || str === '<<' || str === '>>' ||
-                str === '&=' || str === '|=' || str === '^=' || str === '%=' ||
-                str === '<=' || str === '>=' || str === '=>') {
+								str === '+=' || str === '-=' || str === '*=' || str === '/=' ||
+								str === '++' || str === '--' || str === '<<' || str === '>>' ||
+								str === '&=' || str === '|=' || str === '^=' || str === '%=' ||
+								str === '<=' || str === '>=' || str === '=>') {
 							this.index += 2;
 						} else {
 							// 1-character punctuators.
@@ -389,11 +389,11 @@ Lexer.prototype = {
 		}
 
 		this.tokens.push({
-		  type: Token.StringLiteral,
-		  value: str,
-		  octal: octal,
-		  start: start,
-		  end: this.index
+			type: Token.StringLiteral,
+			value: str,
+			octal: octal,
+			start: start,
+			end: this.index
 		});
 	},
 

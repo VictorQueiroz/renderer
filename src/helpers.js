@@ -17,7 +17,7 @@ function isDefined(target) {
 }
 
 function inherit(parent, extra) {
-  return extend(Object.create(parent), extra);
+	return extend(Object.create(parent), extra);
 }
 
 function first(array) {
@@ -241,10 +241,10 @@ function forEach (array, iterator, context) {
 }
 
 function camelCase (str) {
-  return (str = str.replace(/[^A-z]/g, ' ')) && lowercase(str).replace(/(?:^\w|[A-Z]|\b\w|\s+)/g, function(match, index) {
-    if (+match === 0) return ""; // or if (/\s+/.test(match)) for white spaces
-    return index == 0 ? match.toLowerCase() : match.toUpperCase();
-  });
+	return (str = str.replace(/[^A-z]/g, ' ')) && lowercase(str).replace(/(?:^\w|[A-Z]|\b\w|\s+)/g, function(match, index) {
+		if (+match === 0) return ""; // or if (/\s+/.test(match)) for white spaces
+		return index == 0 ? match.toLowerCase() : match.toUpperCase();
+	});
 }
 
 function kebabCase(str) {
@@ -276,24 +276,24 @@ function bind(callback, context) {
 }
 
 function inherits (ctor, superCtor, attrs) {
-  if (ctor === undefined || ctor === null)
-    throw new TypeError('The constructor to "inherits" must not be ' +
-                        'null or undefined');
+	if (ctor === undefined || ctor === null)
+		throw new TypeError('The constructor to "inherits" must not be ' +
+												'null or undefined');
 
-  if (superCtor === undefined || superCtor === null)
-    throw new TypeError('The super constructor to "inherits" must not ' +
-                        'be null or undefined');
+	if (superCtor === undefined || superCtor === null)
+		throw new TypeError('The super constructor to "inherits" must not ' +
+												'be null or undefined');
 
-  if (superCtor.prototype === undefined)
-    throw new TypeError('The super constructor to "inherits" must ' +
-                        'have a prototype');
+	if (superCtor.prototype === undefined)
+		throw new TypeError('The super constructor to "inherits" must ' +
+												'have a prototype');
 
-  ctor.super_ = superCtor;
-  Object.setPrototypeOf(ctor.prototype, superCtor.prototype);
+	ctor.super_ = superCtor;
+	Object.setPrototypeOf(ctor.prototype, superCtor.prototype);
 
-  if(attrs) {
-  	extend(ctor.prototype, attrs);
-  }
+	if(attrs) {
+		extend(ctor.prototype, attrs);
+	}
 }
 
 var id = 0;
@@ -324,24 +324,24 @@ function elementData(node, key, value) {
 }
 
 function elementInheritedData(element, name, value) {
-  // if element is the document object work with the html element instead
-  // this makes $(document).scope() possible
-  if (element.nodeType == Node.DOCUMENT_NODE) {
-    element = element.documentElement;
-  }
+	// if element is the document object work with the html element instead
+	// this makes $(document).scope() possible
+	if (element.nodeType == Node.DOCUMENT_NODE) {
+		element = element.documentElement;
+	}
 
-  var names = isArray(name) ? name : [name];
+	var names = isArray(name) ? name : [name];
 
-  while (element) {
-    for (var i = 0, ii = names.length; i < ii; i++) {
-      if (value = elementData(element, names[i])) return value;
-    }
+	while (element) {
+		for (var i = 0, ii = names.length; i < ii; i++) {
+			if (value = elementData(element, names[i])) return value;
+		}
 
-    // If dealing with a document fragment node with a host element, and no parent, use the host
-    // element as the parent. This enables directives within a Shadow DOM or polyfilled Shadow DOM
-    // to lookup parent controllers.
-    element = element.parentNode || (element.nodeType === Node.DOCUMENT_FRAGMENT_NODE && element.host);
-  }
+		// If dealing with a document fragment node with a host element, and no parent, use the host
+		// element as the parent. This enables directives within a Shadow DOM or polyfilled Shadow DOM
+		// to lookup parent controllers.
+		element = element.parentNode || (element.nodeType === Node.DOCUMENT_FRAGMENT_NODE && element.host);
+	}
 }
 
 function request (url, successFn, errorFn) {

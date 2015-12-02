@@ -44,29 +44,29 @@ NodeLink.prototype = {
 	 * @returns {*}
 	 */
 	group: function(attrStart, attrEnd) {
-    var node = this.node,
+		var node = this.node,
 				nodes = [],
 				depth = 0;
 
-    if (attrStart && node.hasAttribute && node.hasAttribute(attrStart)) {
-      do {
-        if (!node) {
-          throw $compileMinErr('uterdir',
-                    "Unterminated attribute, found '{0}' but no matching '{1}' found.",
-                    attrStart, attrEnd);
-        }
-        if (node.nodeType == Node.ELEMENT_NODE) {
-          if (node.hasAttribute(attrStart)) depth++;
-          if (node.hasAttribute(attrEnd)) depth--;
-        }
-        nodes.push(node);
-        node = node.nextSibling;
-      } while (depth > 0);
-    } else {
-      nodes.push(node);
-    }
+		if (attrStart && node.hasAttribute && node.hasAttribute(attrStart)) {
+			do {
+				if (!node) {
+					throw $compileMinErr('uterdir',
+										"Unterminated attribute, found '{0}' but no matching '{1}' found.",
+										attrStart, attrEnd);
+				}
+				if (node.nodeType == Node.ELEMENT_NODE) {
+					if (node.hasAttribute(attrStart)) depth++;
+					if (node.hasAttribute(attrEnd)) depth--;
+				}
+				nodes.push(node);
+				node = node.nextSibling;
+			} while (depth > 0);
+		} else {
+			nodes.push(node);
+		}
 
-    return new NodeGroup(nodes);
+		return new NodeGroup(nodes);
 	},
 
 	prepare: function(registry) {
@@ -82,8 +82,8 @@ NodeLink.prototype = {
 			directive = this.directives[i];
 
 			if (this.terminalPriority > directive.priority) {
-        break; // prevent further processing of directives
-      }
+				break; // prevent further processing of directives
+			}
 
 			attrStart = directive.$$start;
 			attrEnd = directive.$$end;
@@ -95,7 +95,7 @@ NodeLink.prototype = {
 
 			if(directive.hasOwnProperty('scope') && directive.scope) {
 				// This directive is trying to add an isolated scope.
-        // Check that there is no scope of any kind already
+				// Check that there is no scope of any kind already
 				if(isObject(directive.scope)) {
 					if(this.scope) {
 						throw new Error(
@@ -110,16 +110,16 @@ NodeLink.prototype = {
 				}
 			}
 
-      if(directive.controller) {
-      	// The list of all the
-      	// directives controllers.
-      	context.controllers = context.controllers || {};
-      	context.controllers[directive.name] = directive;
-      }
+			if(directive.controller) {
+				// The list of all the
+				// directives controllers.
+				context.controllers = context.controllers || {};
+				context.controllers[directive.name] = directive;
+			}
 
-      if(!directive.transclude && directive.template) {
-      	directive.transclude = true;
-      }
+			if(!directive.transclude && directive.template) {
+				directive.transclude = true;
+			}
 
 			if(directive.transclude) {
 				if(directive.transclude == 'element') {
@@ -168,40 +168,40 @@ NodeLink.prototype = {
 	getControllers: function(directiveName, node, require, controllers) {
 		var value;
 
-    if (isString(require)) {
-      var match = require.match(this.REQUIRE_PREFIX_REGEXP);
-      var name = require.substring(match[0].length);
-      var inheritType = match[1] || match[3];
-      var optional = match[2] === '?';
+		if (isString(require)) {
+			var match = require.match(this.REQUIRE_PREFIX_REGEXP);
+			var name = require.substring(match[0].length);
+			var inheritType = match[1] || match[3];
+			var optional = match[2] === '?';
 
-      //If only parents then start at the parent element
-      if (inheritType === '^^') {
-        $element = $element.parentNode;
-      //Otherwise attempt getting the controller from controllers in case
-      //the element is transcluded (and has no data) and to avoid .data if possible
-      } else {
-        value = controllers && controllers[name];
-        value = value && value.instance;
-      }
+			//If only parents then start at the parent element
+			if (inheritType === '^^') {
+				$element = $element.parentNode;
+			//Otherwise attempt getting the controller from controllers in case
+			//the element is transcluded (and has no data) and to avoid .data if possible
+			} else {
+				value = controllers && controllers[name];
+				value = value && value.instance;
+			}
 
-      if (!value) {
-        var dataName = '$' + name + 'Controller';
-        value = inheritType ? elementInheritedData(node, dataName) : elementData(node, dataName);
-      }
+			if (!value) {
+				var dataName = '$' + name + 'Controller';
+				value = inheritType ? elementInheritedData(node, dataName) : elementData(node, dataName);
+			}
 
-      if (!value && !optional) {
-        throw new Error("Controller '" + name + "', required by " +
-        								"directive '" + directiveName + "', can't " +
-        								"be found!");
-      }
-    } else if (isArray(require)) {
-      value = [];
-      for (var i = 0, ii = require.length; i < ii; i++) {
-        value[i] = this.getControllers(directiveName, node, require[i], controllers);
-      }
-    }
+			if (!value && !optional) {
+				throw new Error("Controller '" + name + "', required by " +
+												"directive '" + directiveName + "', can't " +
+												"be found!");
+			}
+		} else if (isArray(require)) {
+			value = [];
+			for (var i = 0, ii = require.length; i < ii; i++) {
+				value[i] = this.getControllers(directiveName, node, require[i], controllers);
+			}
+		}
 
-    return value || null;
+		return value || null;
 	},
 
 	invokeLinks: function(type) {
