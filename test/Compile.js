@@ -24,6 +24,9 @@ describe('Compile', function() {
 	beforeEach(function() {
 		scope = new Scope();
 	});
+	afterEach(function() {
+		renderer.clearRegistry();
+	});
 
 	it('should compile a element twice without duplicating elements', function() {
 		scope.counter = 0;
@@ -63,8 +66,6 @@ describe('Compile', function() {
 			'And the counter is 2</span><div>' +
 			'</div></div>'
 		);
-
-		renderer.clearRegistry();
 	});
 
 	it('should recursively compile node directives', function() {
@@ -90,8 +91,6 @@ describe('Compile', function() {
 		search(node, function(node) {
 			expect(node.classList.contains('div-directive')).toBeTruthy();
 		});
-
-		renderer.clearRegistry();
 	});
 
 	describe('Scope', function() {
@@ -117,8 +116,6 @@ describe('Compile', function() {
 			renderer.compile(node)(scope);
 
 			expect(scopeSpy).toHaveBeenCalledWith(scope);
-
-			renderer.clearRegistry();
 		});
 
 		it('should create a new child scope if asked', function() {
@@ -148,13 +145,31 @@ describe('Compile', function() {
 			renderer.compile(node)(scope);
 
 			expect(scopeSpy).toHaveBeenCalled();
-
-			renderer.clearRegistry();
 		});
 
 		it('should create a isolated scope', function() {
-			renderer.clearRegistry();
+			var scopeSpy = jasmine.createSpy();
 
+			node = createNode(
+				'<div nd-isolate-me-up></div>'
+			);
+
+			renderer.register('ndIsolateMeUp', function() {
+				return {
+					scope: {},
+					link: function(scope) {
+						expect(scope.someAttributeThatShouldNotBeExposedToIsolatedScopes).toBeUndefined();
+						scopeSpy(scope);
+					}
+				}
+			});
+
+			renderer.compile(node)(scope);
+
+			expect(scopeSpy).toHaveBeenCalled();
+		});
+
+		it('should define isolated scope bindings', function() {
 			var scopeSpy = jasmine.createSpy();
 			var someValueHere = {
 				someDeepObject: {
@@ -189,8 +204,46 @@ describe('Compile', function() {
 			renderer.compile(node)(scope);
 
 			expect(scopeSpy).toHaveBeenCalled();
+		});
 
-			renderer.clearRegistry();
+		it('should update isolated scope bindings according to the parent scope', function() {
+			node = createNode(
+				'<isolate inheritance="myArrayList"></isolate>'
+			);
+
+			var myArrayList = new Array(10);
+			var scopeSpy = jasmine.createSpy();
+
+			for(var i = 0; i < myArrayList.length; i++) {
+				myArrayList[i] = i;
+			}
+			scope.myArrayList = myArrayList;
+
+			renderer.register('isolate', function() {
+				return {
+					scope: {
+						inheritance: '='
+					},
+					link: function(scope) {
+						expect(scope.inheritance).toBe(myArrayList);
+
+						myArrayList.push(12);
+
+						expect(scope.inheritance).toBe(myArrayList);
+
+						scope.inheritance = 0;
+						scope.$parent.deliverChangeRecords();
+
+						expect(scope.$parent.myArrayList).toBe(0);
+
+						scopeSpy();
+					}
+				}
+			});
+
+			renderer.compile(node)(scope);
+
+			expect(scopeSpy).toHaveBeenCalled();
 		});
 	});
 
