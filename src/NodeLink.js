@@ -345,8 +345,8 @@ NodeLink.prototype = {
 		// a isolated scope, it receive the actual scope. Only the childs of the node
 		// with the isolated scope will receive the isolated scope, this prevents that
 		// the node attributes gets compiled with the values of the isolated scope, and
-		// directives automatically created by the interpolation will be getting the
-		// isolated scope itself, and not the node scope
+		// directives automatically created by the interpolation proccess will be getting
+		// the isolated scope itself, and not the node scope
 		if(this.scope) {
 			switch(this.scope.type) {
 			case NodeLink.SCOPE_CHILD:
