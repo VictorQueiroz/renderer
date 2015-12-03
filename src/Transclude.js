@@ -1,6 +1,6 @@
 function Transclude(node, options) {
 	this.node = node;
-	
+
 	if(isObject(options)) {
 		extend(this, options);
 	}

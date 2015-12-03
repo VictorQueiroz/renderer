@@ -20,6 +20,42 @@ function inherit(parent, extra) {
 	return extend(Object.create(parent), extra);
 }
 
+function isEqual(a, b) {
+	var i = 0;
+
+	if(isObject(a)) {
+		var key,
+				keys = Object.keys(a),
+				value;
+
+		if(keys.length !== Object.keys(b).length) {
+			return false;
+		}
+
+		for(; i < keys.length; i++) {
+			key = keys[i];
+			value = a[key];
+
+			if(isObject(value)){
+				if(!isEqual(value, b[key])) {
+					return false;
+				}
+			} else {
+				if(value !== b[key]) {
+					return false;
+				}
+			}
+		}
+	} else if (isString(a)) {
+		for(; i < a.length; i++) {
+			if(a[i] !== b[i]) {
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
 function first(array) {
 	return array[0];
 }

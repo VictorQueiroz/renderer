@@ -3,6 +3,7 @@ function Watcher () {
 
 	this.watchers = {};
 	this.observers = {};
+	this.expsCache = {};
 	this.changingExpressions = [];
 }
 inherits(Watcher, EventEmitter, {
@@ -164,12 +165,22 @@ inherits(Watcher, EventEmitter, {
 
 	complexExpressionSymbols: '[]()&;!==`;'.split(''),
 
+	parse: function(exp) {
+		if(this.expsCache.hasOwnProperty(exp)) {
+			return this.expsCache[exp];
+		}
+
+		var lexer = new Lexer();
+
+		return (this.expsCache[exp] = new Parser(lexer).parse(exp));
+	},
+
 	watchComplexExpression: function (exp, listener) {
 		if(!this.watchers.hasOwnProperty(exp)) {
 			this.watchers[exp] = { listeners: [] };
 		}
 
-		var parsed = $parse(exp, { getWatchableExps: 1 });
+		var parsed = this.parse(exp, { getWatchableExps: 1 });
 		var exps = parsed.watchableExps;
 		var obj = parsed.object[0];
 

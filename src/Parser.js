@@ -1,9 +1,8 @@
 /**
  * @constructor
  */
-function Parser (lexer, options) {
+function Parser (lexer) {
 	this.lexer = lexer;
-	this.options = options;
 	this.ast = new AST(this.lexer);
 	this.astCompiler = new ASTCompiler(this.ast);
 }

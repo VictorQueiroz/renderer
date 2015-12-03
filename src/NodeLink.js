@@ -76,7 +76,8 @@ NodeLink.prototype = {
 				context = this.context,
 				attrEnd,
 				attrStart,
-				directive;
+				directive,
+				scopeType;
 
 		for(i = 0; i < ii; i++) {
 			directive = this.directives[i];
@@ -104,10 +105,15 @@ NodeLink.prototype = {
 							'child scope defined'
 						);
 					}
-					this.scope = NodeLink.SCOPE_ISOLATED;
+					scopeType = NodeLink.SCOPE_ISOLATED;
 				} else if (isBoolean(directive.scope)) {
-					this.scope = NodeLink.SCOPE_CHILD;
+					scopeType = NodeLink.SCOPE_CHILD;
 				}
+
+				this.scope = {
+					type: scopeType,
+					bindings: directive.scope
+				};
 			}
 
 			if(directive.controller) {
@@ -204,20 +210,6 @@ NodeLink.prototype = {
 		return value || null;
 	},
 
-	invokeLinks: function(type) {
-		var args = toArray(arguments).slice(1);
-		var links = this.links[type];
-		var i, ii = links.length;
-
-		for(i = 0; i < ii; i++) {
-			if(args[3] == null) {
-				args[3] = this.getControllers(links[i].directiveName, this.node, links[i].require, this.controllers);
-			}
-
-			links[i].apply(null, args);
-		}
-	},
-
 	instantiate: function(directive, Controller) {
 		return new Controller();
 	},
@@ -246,52 +238,171 @@ NodeLink.prototype = {
 		return controllers;
 	},
 
+	parse: function(exp) {
+		return new Parser(new Lexer()).parse(exp);
+	},
+
+	// Set up $watches for isolate scope and controller bindings. This process
+	// only occurs for isolate scopes and new scopes with controllerAs.
+	directiveBindings: function(scope, dest, bindings) {
+		var i = 0,
+				bindingsKeys = Object.keys(bindings),
+				ii = bindingsKeys.length,
+				mode,
+				attrs = this.attributes;
+		forEach(bindings, function(mode, key) {
+			var attrName,
+					parentGet,
+					parentSet,
+					lastValue;
+
+			mode = bindings[key];
+
+			if(mode.length > 1) {
+				attrName = mode.substring(1);
+				mode = mode[0];
+			} else {
+				attrName = key;
+			}
+
+			switch(mode) {
+				case '@':
+					attrs.$observe(attrName, function(value) {
+						if(isString(value)) {
+							dest[key] = value;
+						}
+					});
+
+					if(isString(attrs[attrName])) {
+						// If the attribute has been provided then we trigger an interpolation to ensure
+						// the value is there for use in the link fn
+						dest[key] = new Interpolate(attrs[attrName]).compile(scope);
+					}
+					break;
+				case '=':
+					if(!attrs.hasOwnProperty(attrName)) {
+						break;
+					}
+
+					parentGet = this.parse(attrs[attrName]);
+					parentSet = parentGet.assign;
+					lastValue = dest[key] = parentGet(scope);
+
+					var parentWatcher = function(value) {
+						if(!isEqual(value, dest[key])) {
+							// we are out of sync and need to copy
+							if(!isEqual(value, lastValue)) {
+								// parent changed and it has precedence
+								dest[key] = value;
+							} else {
+								parentSet(scope, value = dest[key]);
+							}
+						}
+						return (lastValue = value);
+					};
+
+					scope.$watchCollection(attrs[attrName], parentWatcher);
+					break;
+			}
+		}, this);
+	},
+
+	callLink: function(link, scope, transcludeFn) {
+		link(
+			scope,
+			this.node,
+			this.attributes,
+			this.getControllers(
+				link.directiveName,
+				this.node,
+				link.require,
+				this.controllers
+			),
+			transcludeFn
+		);
+
+		return this;
+	},
+
 	execute: function(scope, childLink, transcludeFn) {
+		var newScope;
+
 		if(this.transclude) {
 			this.transcludeFn = this.transclude.getTranscludeCallback(scope);
 		} else if (!this.transcludeFn && isFunction(transcludeFn)) {
 			this.transcludeFn = transcludeFn;
 		}
 
-		switch(this.scope) {
-		case NodeLink.SCOPE_CHILD:
-			scope = scope.$new();
-			break;
-		case NodeLink.SCOPE_ISOLATED:
-			scope = scope.$new(true);
-			break;
+		// If the link that receive the isolated scope directive does not require
+		// a isolated scope, it receive the actual scope. Only the childs of the node
+		// with the isolated scope will receive the isolated scope, this prevents that
+		// the node attributes gets compiled with the values of the isolated scope, and
+		// directives automatically created by the interpolation will be getting the
+		// isolated scope itself, and not the node scope
+		if(this.scope) {
+			switch(this.scope.type) {
+			case NodeLink.SCOPE_CHILD:
+				newScope = scope.$new();
+				break;
+			case NodeLink.SCOPE_ISOLATED:
+				newScope = scope.$new(true);
+				this.directiveBindings(scope, newScope, this.scope.bindings);
+				break;
+			}
+		} else if(!newScope) {
+			newScope = scope;
 		}
 
 		if(this.context.controllers) {
-			this.controllers = this.setupControllers(scope, this.node, this.attributes, transcludeFn);
+			this.controllers = this.setupControllers(newScope, this.node, this.attributes, transcludeFn);
 		}
 
-		this.invokeLinks('pre', scope, this.node, this.attributes, null, this.transcludeFn);
+		var i = 0,
+				links = this.links,
+				ii = links.pre.length,
+				link;
+		for(; i < ii; i++) {
+			link = links.pre[i];
+
+			this.callLink(
+				link,
+				link.newScopeType ? newScope : scope,
+				this.transcludeFn
+			);
+		}
 
 		childLink.execute(scope, this.transcludeFn);
 
-		this.invokeLinks('post', scope, this.node, this.attributes, null, this.transcludeFn);
+		i = links.post.length - 1;
+		for(; i >= 0; i--) {
+			link = links.post[i];
+
+			this.callLink(
+				link,
+				link.newScopeType ? newScope : scope,
+				this.transcludeFn
+			);
+		}
 	},
 
 	addLink: function(link, directive) {
 		var links = this.links;
+		var directiveData = {
+			directiveName: directive.name,
+			require: directive.require,
+			newScopeType: isDefined(directive.scope)
+		};
 
 		if(isObject(link)) {
 			forEach(link, function(value, key) {
-				extend(value, {
-					directiveName: directive.name,
-					require: directive.require
-				});
+				extend(value, directiveData);
 
 				if(links.hasOwnProperty(key)) {
 					links[key].push(value);
 				}
 			});
 		} else if(isFunction(link)) {
-			extend(link, {
-				directiveName: directive.name,
-				require: directive.require
-			});
+			extend(link, directiveData);
 
 			links.post.push(link);
 		}

@@ -125,6 +125,7 @@ describe('Compile', function() {
 			var scopeSpy = jasmine.createSpy();
 
 			node = createNode('');
+
 			scope.someDeepProperty = {
 				but: {
 					shouldBeOnChildScope: 1
@@ -138,6 +139,47 @@ describe('Compile', function() {
 						expect(scope).not.toBe(scope.$parent);
 						expect(scope instanceof scope.$parent.$$ChildScope).toBeTruthy();
 						expect(scope.someDeepProperty.but.shouldBeOnChildScope).toEqual(1);
+
+						scopeSpy(scope);
+					}
+				}
+			});
+
+			renderer.compile(node)(scope);
+
+			expect(scopeSpy).toHaveBeenCalled();
+
+			renderer.clearRegistry();
+		});
+
+		it('should create a isolated scope', function() {
+			renderer.clearRegistry();
+
+			var scopeSpy = jasmine.createSpy();
+			var someValueHere = {
+				someDeepObject: {
+					hereIsTheValue: 1
+				}
+			};
+
+			scope.title = 'Title of the directive';
+			scope.someAttributeThatShouldNotBeExposedToIsolatedScopes = 1;
+			scope.someValueHere = someValueHere;
+
+			node = createNode(
+				'<div nd-isolate-me-up value="{{title}}" my-attr="someValueHere"></div>'
+			);
+
+			renderer.register('ndIsolateMeUp', function() {
+				return {
+					scope: {
+						value: '@',
+						someReference: '=myAttr'
+					},
+					link: function(scope) {
+						expect(scope.someAttributeThatShouldNotBeExposedToIsolatedScopes).toBeUndefined();
+						expect(scope.value).toEqual('Title of the directive');
+						expect(scope.someReference).toBe(someValueHere);
 
 						scopeSpy(scope);
 					}
@@ -383,8 +425,12 @@ describe('Compile', function() {
 			renderer.register('firstMe', function() {
 				return {
 					priority: 100,
-					link: function() {
-						list.push(LINK_1);
+					compile: function() {
+						return {
+							pre: function() {
+								list.push(LINK_1);
+							}
+						};
 					}
 				};
 			});
@@ -392,8 +438,12 @@ describe('Compile', function() {
 			renderer.register('thenMe', function() {
 				return {
 					priority: 90,
-					link: function() {
-						list.push(LINK_2);
+					compile: function() {
+						return {
+							pre: function() {
+								list.push(LINK_2);
+							}
+						};
 					}
 				};
 			});

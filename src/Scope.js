@@ -1,7 +1,9 @@
 function Scope(parent) {
 	Watcher.call(this);
 
-	this.$parent = parent;
+	if(parent) {
+		this.$parent = parent;
+	}
 }
 
 inherits(Scope, Watcher, {
@@ -23,12 +25,12 @@ inherits(Scope, Watcher, {
 		parent = parent || this;
 
 		if(isolate) {
-			child = new Scope();
+			child = new Scope(parent);
 		} else {
 			// Only create a child scope class if somebody asks for one,
 			// but cache it to allow the VM to optimize lookups.
 			if (!this.$$ChildScope) {
-				this.$$ChildScope = this.$$createChildScopeClass();		this.changingExpressions = [];
+				this.$$ChildScope = this.$$createChildScopeClass();
 			}
 
 			child = new this.$$ChildScope();
