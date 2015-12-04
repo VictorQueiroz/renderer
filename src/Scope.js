@@ -37,5 +37,17 @@ inherits(Scope, Watcher, {
 		}
 
 		return child;
+	},
+
+	deliverChangeRecords: function() {
+		var deliverChangeRecords = bind(Watcher.prototype.deliverChangeRecords, this);
+
+		deliverChangeRecords();
+
+		if(this.$parent) {
+			this.$parent.deliverChangeRecords();
+		}
+
+		return this;
 	}
 });
