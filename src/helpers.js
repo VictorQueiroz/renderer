@@ -47,6 +47,10 @@ function isEqual(a, b) {
 			}
 		}
 	} else if (isString(a)) {
+		if(a.length !== b.length) {
+			return false;
+		}
+
 		for(; i < a.length; i++) {
 			if(a[i] !== b[i]) {
 				return false;
