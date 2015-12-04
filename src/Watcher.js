@@ -55,7 +55,8 @@ inherits(Watcher, EventEmitter, {
 	createObserver: function(objectPath) {
 		var i,
 				scope = this,
-				observer = new Observer(objectPath.indexOf('.') === -1 ? this[objectPath] : get(this, objectPath));
+				object = objectPath.indexOf('.') === -1 ? this[objectPath] : get(this, objectPath),
+				observer = new Observer(object);
 
 		observer.on('updated', function() {
 			scope.emit('updated');
@@ -232,6 +233,10 @@ inherits(Watcher, EventEmitter, {
 			unwatchCollection();
 
 			if(isObject(value)) {
+				if(value.hasOwnProperty('someChangeHere') || value.hasOwnProperty('somethingChanged')) {
+					console.log(value);
+				}
+
 				unwatchCollection = this.watchObject(exp, function() {
 					listener.call(scope, scope.eval(exp));
 				});

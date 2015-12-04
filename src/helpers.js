@@ -302,7 +302,7 @@ function lazy(callback, context) {
 }
 
 function last(array) {
-	return array && array[0];
+	return array && array[array.length - 1];
 }
 
 function bind(callback, context) {
