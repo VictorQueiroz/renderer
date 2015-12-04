@@ -169,7 +169,7 @@ function noop() {
 }
 
 function isObject (value) {
-	return typeof value === 'object';
+	return value !== null && (typeof value === 'object');
 }
 
 function isString (value) {
