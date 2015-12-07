@@ -1,146 +1,90 @@
 describe('Observer', function() {
-	var observer, object, changedPath;
-	var assert = {
-		equal: function(a, b) {
-			return expect(a).toBe(b);
+	var object,
+			observer;
+
+	beforeEach(function() {
+		object = {};
+		observer = new Observer(object);
+	});
+
+	it('should watch properties', function() {
+		var listenerSpy = jasmine.createSpy();
+
+		observer.watch('hereIsSomeProperty', listenerSpy);
+
+		object.hereIsSomeProperty = 0;
+		observer.deliverChangeRecords();
+
+		expect(listenerSpy).toHaveBeenCalledWith(0, undefined);
+
+		for(var i = 1; i < 10; i++) {
+			object.hereIsSomeProperty = i;
+			observer.deliverChangeRecords();
+
+			expect(listenerSpy).toHaveBeenCalledWith(i, i - 1);
 		}
-	}
+	});
+});
 
-	it('should watch an simple object', function() {
+describe('DeepObserver', function() {
+	var object,
+			observer;
+
+	beforeEach(function() {
 		object = {};
-
-		observer = new Observer(object);
-		observer.on('changedProperty', function(path) {
-			changedPath = path;
-		});
-		
-		object.someObject = { 2000: 'someValue' };
-		observer.deliverChangeRecords();
-
-		assert.equal('someObject', changedPath);
+		observer = new DeepObserver(object);
 	});
 
-	it('should start to observe new object property added to the object', function(done) {
-		var times = 0;
+	it('should watch deep objects forever', function() {
+		var observerSpy = jasmine.createSpy();
 
-		object 		= {};
-		observer 	= new Observer(object);
-		observer.on('updated', function() {
-			times++;
-		});
+		observer.on('pathChanged', observerSpy);
 
-		object.someObject = {};
+		object.a = 1;
+		object.b = {};
+
 		observer.deliverChangeRecords();
 
-		assert.equal(1, times);
-
-		object.someObject.anotherObject = {};
+		object.b.a = 1;
 		observer.deliverChangeRecords();
 
-		assert.equal(2, times);
+		expect(observerSpy).toHaveBeenCalledWith('b.a', 1, undefined);
 
-		object.someObject.anotherObject.someKey = 100;
+		object.b.c = 2;
 		observer.deliverChangeRecords();
 
-		assert.equal(3, times);
+		expect(observerSpy).toHaveBeenCalledWith('b.c', 2, undefined);
 
-		done();
-	});
+		object.b.c = 3;
+		observer.deliverChangeRecords();
 
-	it('should detect destroy of properties and keep waiting for them to be redefined', function(done) {
-		var times = 0;
+		expect(observerSpy).toHaveBeenCalledWith('b.c', 3, 2);
 
-		object 		= {};
-		observer 	= new Observer(object);
+		object.b.d = {};
+		observer.deliverChangeRecords();
 
-		observer.on('updated', function() {
-			times++;
-		});
+		expect(observerSpy).toHaveBeenCalledWith('b.d', {}, undefined);
 
-		object.someObject = {
-			objectOne: {
-				objectTwo: {
-					futureObject: 1000
-				}
-			}
-		};
+		object.b.d.a = 1;
+		observer.deliverChangeRecords();
 
-		setTimeout(function() {
-			assert.equal(1, times);
+		expect(observerSpy).toHaveBeenCalledWith('b.d.a', 1, undefined);
 
-			delete object.someObject.objectOne;
+		object.b.d.b = {};
+		observer.deliverChangeRecords();
 
-			setTimeout(function() {
-				assert.equal(2, times);
+		expect(observerSpy).toHaveBeenCalledWith('b.d.b', {}, undefined);
 
-				object.someObject.objectOne = { someValue: 1000 };
+		object.b.d.b.a = 1;
+		observer.deliverChangeRecords();
 
-				setTimeout(function() {
-					assert.equal(3, times);
+		expect(observerSpy).toHaveBeenCalledWith('b.d.b.a', 1, undefined);
 
-					delete object.someObject;
+		expect(observer.childObservers.hasOwnProperty('b')).toBeTruthy();
 
-					setTimeout(function() {
-						assert.equal(4, times);
+		delete object.b;
+		observer.deliverChangeRecords();
 
-						object.someObject = {
-							someValue: 1000,
-							someSecondValue: 400
-						};
-
-						setTimeout(function() {
-							assert.equal(5, times);
-
-							done();
-						});
-					});
-				});
-			});
-		});
-	});
-
-	it('should automatically watch a complex object', function(done) {
-		var times = 0;
-
-		object = {};
-
-		observer = new Observer(object);
-		observer.on('updated', function() {
-			times++;
-		});
-
-		object.someObject = {someObjectValue: 1};
-
-		setTimeout(function() {
-			assert.equal(1, Object.keys(observer.childObservers).length);
-
-			object.someObject.someObjectValue = {
-				value: 200
-			};
-			
-			setTimeout(function() {
-				assert.equal(2, times);
-
-				object.someObject.someObjectValue.someAnotherValue = 0;
-				
-				setTimeout(function() {
-					assert.equal(3, times);
-
-					object.someObject.someObjectValue.anotherValue = 0;
-
-					setTimeout(function() {
-						assert.equal(4, times);
-
-						delete object.someObject.someObjectValue;
-
-						setTimeout(function() {
-							assert.equal(5, times);
-
-							done();
-						});
-					});
-				});
-			});
-		});
+		expect(observer.childObservers.hasOwnProperty('b')).toBeFalsy();
 	});
 });
