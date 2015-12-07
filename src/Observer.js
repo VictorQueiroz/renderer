@@ -1,205 +1,195 @@
-function Observer(object, parentObserver, property) {
+extend(Observer, {
+	UPDATE: 'update',
+	DELETE: 'delete',
+	ADD: 'add',
+
+	DELIVERING: 1,
+	IDLE: 2
+});
+
+function Observer(object) {
 	EventEmitter.call(this);
 
-	var observer = this;
+	if(!isObject(object)) {
+		this.throwError('The first parameter must be an object');
+	}
 
+	this.state = Observer.IDLE;
 	this.object = object;
+	this.listeners = {};
 
-	if(isArray(parentObserver) && (parentObserver instanceof Observer === false)) {
-		this.ignoredKeys = parentObserver;
-		parentObserver = null;
-	} else {
-		this.ignoredKeys = [];
-	}
+	var self = this,
+			listeners = this.listeners;
 
-	if(parentObserver) {
-		this.parentObserver = parentObserver;
-	}
-	if(property) {
-		this.property = property;
-	}
-
-	this.cachedPath 					= this.getPath();
-	this.childObservers 			= {};
-
-	this
-	.on('updated', function() {
-		this.deliverChangeRecords();
-	})
-	.on('changed', function(changes) {
-		var i = 0,
+	this.onChangeListener_ = function(changes) {
+		var i,
+				j,
+				prop,
 				change,
-				changedValue,
-				childObserver,
-				changedProperty;
+				listener,
+				newValue,
+				oldValue;
 
-		for(; i < changes.length; i++) {
-			change 						= changes[i];
-			changedProperty 	= change.name;
-			changedValue 			= change.object[changedProperty];
+		for(i = 0; i < changes.length; i++) {
+			change = changes[i];
+			prop = change.name;
+			newValue = change.object[prop];
 
-			switch(change.type) {
-				case 'add':
-					if(isObject(changedValue)) {
-						this.createChildObserver(changedProperty, changedValue);
-					}
-					break;
-				case 'update':
-				case 'delete':
-					if(isObject(change.oldValue) && (childObserver = this.getChildObserver(change.name))) {
-						childObserver.destroy();
-					}
-					if(isObject(changedValue)) {
-						this.createChildObserver(changedProperty, changedValue);
-					}
-					break;
+			if(change.type == Observer.UPDATE && change.hasOwnProperty('oldValue')) {
+				oldValue = change.oldValue;
+			} else if(oldValue) {
+				oldValue = undefined;
 			}
 
-			if(change.hasOwnProperty('name')) {
-				this.deliverChangedProperty(change);
+			if(listeners.hasOwnProperty(prop) && listeners[prop].length) {
+				for(j = 0; j < listeners[prop].length; j++) {
+					listener = listeners[prop][j];
+
+					listener(newValue, oldValue);
+				}
 			}
 		}
 
-		this.emit('updated');
-	})
-	.on('childChanged', function(property, c) {
-		this.emit('updated');
-	});
-
-	this.listener = function(changes) {
-		observer.emit('changed', changes);
+		self.emit('update', changes);
 	};
 
-	Object.observe(this.object, this.listener);
-
-	this.walkInto(this.object);
+	this.observerListener_ = observe(object, this.onChangeListener_);
 }
 
 inherits(Observer, EventEmitter, {
-	getPath: function() {
-		var path = [];
-		var parentObserver = this.parentObserver;
+	throwError: function(msg) {
+		throw new Error(msg);
+	},
 
-		while(parentObserver) {
-			if(parentObserver.hasOwnProperty('property')) {
-				path.push(parentObserver.property);
+	watch: function(property, listener) {
+		if(!this.listeners.hasOwnProperty(property)) {
+			this.listeners[property] = [];
+		}
+
+		this.listeners[property].push(listener);
+		this.deliverChangeRecords();
+	},
+
+	deliverChangeRecords: function() {
+		Object.deliverChangeRecords(this.observerListener_);
+	}
+});
+
+function observe(object, listener) {
+	Object.observe(object, listener);
+
+	return listener;
+}
+
+function unobserve(object, listener) {
+	Object.unobserve(object, listener);
+}
+
+function DeepObserver(object, parentObserver, parentProperty) {
+	Observer.call(this, object);
+
+	this.childObservers = {};
+
+	if(parentObserver instanceof DeepObserver === true) {
+		this.parentObserver = parentObserver;
+	}
+
+	if(isString(parentProperty)) {
+		this.parentProperty = parentProperty;
+	}
+
+	if(this.parentObserver && !this.parentProperty) {
+		this.throwError('A child observer must have a parent property');
+	}
+
+	this.on('update', function(changes) {
+		var i = 0,
+				ii = changes.length,
+				prop,
+				value,
+				change;
+
+		for(; i < ii; i++) {
+			change = changes[i];
+			prop = change.name;
+			value = change.object[prop];
+
+			if(change.type == Observer.DELETE || change.type == Observer.UPDATE) {
+				if(isObject(change.oldValue) || isArray(value)) {
+					if(this.childObservers.hasOwnProperty(prop)) {
+						this.childObservers[prop].destroy();
+					}
+				}
 			}
 
-			parentObserver = parentObserver.hasOwnProperty('parentObserver') ? parentObserver.parentObserver : null;
-		}
-
-		if(this.property) {
-			path.unshift(this.property);
-		}
-
-		return path.join('.');
-	},
-
-	deliverChangedProperty: function(change) {
-		var property = change.name;
-		var path = this.cachedPath.split('.').filter(function(key) {
-			return key.match(/\S/);
-		});
-
-		path.unshift(property);
-		path.reverse();
-
-		path = path.join('.');
-
-		this.emit('changedProperty', path, change.object[change.name]);
-	},
-
-	deliverChangeRecords: function(property) {
-		var childObserver, i, childObserverProperty, keys = Object.keys(this.childObservers);
-
-		for(i = 0; i < keys.length; i++) {
-			childObserverProperty = keys[i];
-
-			// prevent from removed observers
-			if(this.childObservers.hasOwnProperty(childObserverProperty)) {
-				childObserver = this.childObservers[childObserverProperty];
-				childObserver.deliverChangeRecords();
+			if(change.type == Observer.UPDATE || change.type == Observer.ADD) {
+				if(isObject(value) || isArray(value)) {
+					this.createChildObserver(prop, value);
+				}
 			}
 		}
+	})
+	.on('pathChanged', function(path, value, oldValue) {
+		if(this.parentObserver) {
+			path = path.split('.');
+			path.unshift(this.parentProperty);
 
-		Object.deliverChangeRecords(this.listener);
+			this.parentObserver.emit('pathChanged', path.join('.'), value, oldValue);
+		}
+	});
+}
 
-		return this;
-	},
-
-	getChildObserver: function(property) {
-		return this.childObservers[property];
-	},
-
-	createChildObserver: function(property, value) {
-		var parentObserver = this;
-
+inherits(DeepObserver, Observer, {
+	createChildObserver: function (property, object) {
 		if(this.childObservers.hasOwnProperty(property)) {
 			this.childObservers[property].destroy();
 		}
 
-		var childObserver = new Observer(value, this, property);
-		Object.deliverChangeRecords(this.listener);
+		var parentObserver = this;
+		var childObserver = new DeepObserver(object, parentObserver, property);
+
+		childObserver.on('update', function(changes) {
+			var i = 0,
+					ii = changes.length,
+					path,
+					value,
+					change;
+
+			for(; i < ii; i++) {
+				path = [];
+				change = changes[i];
+
+				path.push(property, change.name);
+				value = change.object[change.name];
+
+				parentObserver.emit('pathChanged', path.join('.'), value, change.oldValue);
+			}
+		})
+		.on('destroy', function() {
+			delete parentObserver.childObservers[property];
+		});
 
 		this.childObservers[property] = childObserver;
-
-		childObserver
-		.on('updated', function(changes) {
-			parentObserver.emit('childChanged', property, changes);
-		})
-		.on('changedProperty', function(changedPath, data) {
-			parentObserver.emit('changedProperty', changedPath, data);
-		});
-
-		return this;
 	},
 
-	destroy: function () {
-		var observer = this;
+	watch: function (path, listener) {
+		//
+	},
 
-		Object.unobserve(this.object, this.listener);
-
-		forEach(this.childObservers, function(value, key) {
-			observer.childObservers[key].destroy();
-		});
-
-		if(this.property) {
-			delete this.parentObserver.childObservers[this.property];
-		}
-
+	destroy: function() {
+		unobserve(this.object, this.onChangeListener_);
+		this.emit('destroy');
 		this.removeAllListeners();
-
-		return this;
 	},
 
-	objectCache: [],
-
-	walkInto: function(object) {
+	deliverChangeRecords: function(ignoreChilds) {
 		var i = 0,
-				key,
-				value,
-				observer = this,
-				objectKeys = Object.keys(object);
+				observers = Object.keys(this.childObservers);
 
-		objectKeys = objectKeys.filter(function(key) {
-			return observer.ignoredKeys.indexOf(key) === -1;
-		});
-
-		for(; i < objectKeys.length; i++) {
-			key = objectKeys[i];
-			value = object[key];
-
-			if(this.objectCache.indexOf(value) > -1) {
-				continue;
-			}
-
-			this.objectCache.push(value);
-
-			if(isObject(value) && !isFunction(value)) {
-				observer.createChildObserver(key, value);
-			}
+		for(; i < observers.length; i++) {
+			this.childObservers[observers[i]].deliverChangeRecords();
 		}
 
-		return this;
+		Observer.prototype.deliverChangeRecords.call(this, arguments);
 	}
 });
