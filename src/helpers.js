@@ -8,6 +8,10 @@ function isUndefined(target) {
 	return typeof target === 'undefined';
 }
 
+function isNull (target) {
+	return target == null && typeof target == 'object';
+}
+
 function isBoolean(target) {
 	return typeof target === 'boolean';
 }
@@ -28,7 +32,7 @@ function isEqual(a, b) {
 				keys = Object.keys(a),
 				value;
 
-		if(keys.length !== Object.keys(b).length) {
+		if(!isObject(b) || keys.length !== Object.keys(b).length) {
 			return false;
 		}
 
@@ -47,12 +51,23 @@ function isEqual(a, b) {
 			}
 		}
 	} else if (isString(a)) {
+		if(a.length !== b.length) {
+			return false;
+		}
+
 		for(; i < a.length; i++) {
 			if(a[i] !== b[i]) {
 				return false;
 			}
 		}
+	} else if (isNumber(a)) {
+		if(a !== b) {
+			return false;
+		}
+
+		return true;
 	}
+
 	return true;
 }
 
@@ -60,23 +75,36 @@ function first(array) {
 	return array[0];
 }
 
-function clone (object) {
-	var keys = Object.keys(object);
-	var i, ii = keys.length, key, value;
-	var cloned = {};
+function copy (destination, source, stack) {
+	if(isObject(source)) {
+		var keys = Object.keys(source);
+		var i,
+				ii = keys.length,
+				key,
+				value;
 
-	for(i = 0; i < ii; i++) {
-		key 		= keys[i];
-		value 	= object[key];
+		stack = stack || [];
 
-		if(isObject(value)) {
-			value = clone(value);
+		for(i = 0; i < ii; i++) {
+			key 		= keys[i];
+			value 	= source[key];
+
+			stack.push(value);
+
+			if(isObject(value) && stack.indexOf(value) === -1) {
+				value = copy(isArray(value) ? [] : {}, value, stack);
+			}
+
+			destination[key] = value;
 		}
 
-		cloned[key] = value;
+		return destination;
 	}
+	return source;
+}
 
-	return cloned;
+function clone (object) {
+	return copy(isArray(object) ? [] : {}, object);
 }
 
 function values (object) {
@@ -118,6 +146,8 @@ function get (object, path) {
 }
 
 function set (object, path, value) {
+	if(!path) path = '';
+
 	var keys = path.split('.');
 
 	var i,
@@ -125,6 +155,7 @@ function set (object, path, value) {
 			result = object;
 
 	for(i = 0; i < ii; i++) {
+		if(!result) result = {};
 		if(i === (ii - 1)) {
 			result[keys[i]] = value;
 		} else if(result && result.hasOwnProperty(keys[i])) {
@@ -134,7 +165,7 @@ function set (object, path, value) {
 		}
 	}
 
-	return has;
+	return result;
 }
 
 function has (object, path) {
@@ -148,6 +179,7 @@ function has (object, path) {
 	for(i = 0; i < ii; i++) {
 		has = false;
 
+		if(!result) result = {};
 		if(result.hasOwnProperty(keys[i])) {
 			result = result[keys[i]];
 		} else {
@@ -165,7 +197,7 @@ function noop() {
 }
 
 function isObject (value) {
-	return typeof value === 'object';
+	return value !== null && (typeof value === 'object');
 }
 
 function isString (value) {
@@ -212,6 +244,8 @@ function omit(object, keys) {
 }
 
 function extend (target) {
+	if(!target) target = {};
+
 	var sources = toArray(arguments).slice(1).filter(isDefined);
 
 	var source,
@@ -224,17 +258,16 @@ function extend (target) {
 			j;
 
 	for(i = 0; i < ii; i++) {
-		source = sources[i];
+		if((source = sources[i]) && isObject(source)) {
+			keys = Object.keys(source);
+			jj = keys.length;
 
-		keys = Object.keys(source);
+			for(j = 0; j < jj; j++) {
+				key 					= keys[j];
+				value 				= source[key];
 
-		jj = keys.length;
-
-		for(j = 0; j < jj; j++) {
-			key 					= keys[j];
-			value 				= source[key];
-
-			target[key] 	= value;
+				target[key] 	= value;
+			}
 		}
 	}
 
@@ -298,7 +331,7 @@ function lazy(callback, context) {
 }
 
 function last(array) {
-	return array && array[0];
+	return array && array[array.length - 1];
 }
 
 function bind(callback, context) {

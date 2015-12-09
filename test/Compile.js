@@ -24,6 +24,7 @@ describe('Compile', function() {
 	beforeEach(function() {
 		scope = new Scope();
 	});
+
 	afterEach(function() {
 		renderer.clearRegistry();
 	});
@@ -211,13 +212,14 @@ describe('Compile', function() {
 				'<isolate inheritance="myArrayList"></isolate>'
 			);
 
-			var myArrayList = new Array(10);
 			var scopeSpy = jasmine.createSpy();
 
-			for(var i = 0; i < myArrayList.length; i++) {
-				myArrayList[i] = i;
+			scope.myArrayList = new Array(10);
+			for(var i = 0; i < scope.myArrayList.length; i++) {
+				scope.myArrayList[i] = i;
 			}
-			scope.myArrayList = myArrayList;
+
+			var myArrayList = scope.myArrayList;
 
 			renderer.register('isolate', function() {
 				return {
@@ -230,11 +232,15 @@ describe('Compile', function() {
 						myArrayList.push(12);
 
 						expect(scope.inheritance).toBe(myArrayList);
+						expect(last(scope.inheritance)).toBe(12);
 
 						scope.inheritance = 0;
-						scope.$parent.deliverChangeRecords();
-
+						scope.deliverChangeRecords();
 						expect(scope.$parent.myArrayList).toBe(0);
+
+						scope.inheritance = 1;
+						scope.deliverChangeRecords();
+						expect(scope.$parent.myArrayList).toBe(1);
 
 						scopeSpy();
 					}
@@ -346,8 +352,9 @@ describe('Compile', function() {
 				'<div rd-show-end></div>'
 			);
 
-			scope.counter = 0;
+			scope.counter = -1;
 			scope.shouldShowMe = true;
+			scope.deliverChangeRecords();
 
 			renderer.register('rdShow', function() {
 				return {
@@ -355,22 +362,25 @@ describe('Compile', function() {
 					link: function(scope, el, attrs) {
 						var method;
 
-						scope.$watch(attrs.rdShow, function(value) {
+						scope.watch(attrs.rdShow, function(value) {
 							method = value ? 'remove' : 'add';
 
 							el.classList[method]('hide');
+
 							scope.counter++;
 						});
 					}
 				};
 			});
 			renderer.compile(node)(scope);
+			scope.deliverChangeRecords();
 
 			expect(node.outerHTML).toEqual(
 				'<div><div rd-show-start="shouldShowMe">' +
 				'</div><div><span>1</span></div><div rd-' +
 				'show-end=""></div></div>'
 			);
+			scope.deliverChangeRecords();
 
 			scope.shouldShowMe = false;
 			scope.deliverChangeRecords();
@@ -403,6 +413,7 @@ describe('Compile', function() {
 			});
 
 			renderer.compile(node)(scope);
+			scope.deliverChangeRecords();
 
 			expect(linkSpy).toHaveBeenCalled();
 			expect(node.outerHTML).toEqual(
@@ -427,6 +438,7 @@ describe('Compile', function() {
 
 			var compile = new Compile(node, directiveRegistry);
 			compile.execute(scope);
+			scope.deliverChangeRecords();
 
 			expect(node.outerHTML).toEqual(
 				'<div>Hi! My name is, John Cena, and ' +

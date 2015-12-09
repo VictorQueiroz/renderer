@@ -9,6 +9,11 @@ describe('Helpers', function() {
 		expect(isEqual('A great value here', 'A great value here')).toBeTruthy();
 		expect(isEqual('A great value here', 'A_great value here')).not.toBeTruthy();
 
+		expect(isEqual(1, [1,2,3,4])).not.toBeTruthy();
+		expect(isEqual('1', [1,2,3,4])).not.toBeTruthy();
+		expect(isEqual('1', 1)).not.toBeTruthy();
+		expect(isEqual(1, 2)).not.toBeTruthy();
+
 		expect(isEqual({ a: 1 }, { a: 1	})).toBeTruthy();
 		expect(isEqual({ a: 1 }, { b: 1	})).not.toBeTruthy();
 

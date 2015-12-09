@@ -1,146 +1,72 @@
 describe('Observer', function() {
-	var observer, object, changedPath;
-	var assert = {
-		equal: function(a, b) {
-			return expect(a).toBe(b);
-		}
-	}
+	var object,
+			observer,
+			listenerSpy;
 
-	it('should watch an simple object', function() {
+	beforeEach(function() {
 		object = {};
-
 		observer = new Observer(object);
-		observer.on('changedProperty', function(path) {
-			changedPath = path;
-		});
-		
-		object.someObject = { 2000: 'someValue' };
-		observer.deliverChangeRecords();
-
-		assert.equal('someObject', changedPath);
+		listenerSpy = jasmine.createSpy();
 	});
 
-	it('should start to observe new object property added to the object', function(done) {
-		var times = 0;
+	it('should watch object property', function() {
+		observer.watch('hereIsSomeProperty', listenerSpy);
 
-		object 		= {};
-		observer 	= new Observer(object);
-		observer.on('updated', function() {
-			times++;
-		});
-
-		object.someObject = {};
+		object.hereIsSomeProperty = 0;
 		observer.deliverChangeRecords();
 
-		assert.equal(1, times);
+		expect(listenerSpy).toHaveBeenCalledWith(0, undefined);
 
-		object.someObject.anotherObject = {};
-		observer.deliverChangeRecords();
+		for(var i = 1; i < 10; i++) {
+			object.hereIsSomeProperty = i;
+			observer.deliverChangeRecords();
 
-		assert.equal(2, times);
-
-		object.someObject.anotherObject.someKey = 100;
-		observer.deliverChangeRecords();
-
-		assert.equal(3, times);
-
-		done();
+			expect(listenerSpy).toHaveBeenCalledWith(i, i - 1);
+		}
 	});
 
-	it('should detect destroy of properties and keep waiting for them to be redefined', function(done) {
-		var times = 0;
+	it('should detect deep changes on properties', function() {
+		observer.watch('detect.somePropertyChanges', listenerSpy);
 
-		object 		= {};
-		observer 	= new Observer(object);
+		object.detect = {
+			somePropertyChanges: 1
+		};
+		observer.deliverChangeRecords();
 
-		observer.on('updated', function() {
-			times++;
-		});
+		expect(listenerSpy).toHaveBeenCalledWith(1, undefined);
 
-		object.someObject = {
-			objectOne: {
-				objectTwo: {
-					futureObject: 1000
+		object.detect.somePropertyChanges++;
+		observer.deliverChangeRecords();
+
+		expect(listenerSpy).toHaveBeenCalledWith(2, 1);
+
+		object.detect = {
+			somePropertyChanges: {
+				heyBuddy: {
+					howAreYou: 'I am fine!'
 				}
 			}
 		};
+		observer.deliverChangeRecords();
 
-		setTimeout(function() {
-			assert.equal(1, times);
-
-			delete object.someObject.objectOne;
-
-			setTimeout(function() {
-				assert.equal(2, times);
-
-				object.someObject.objectOne = { someValue: 1000 };
-
-				setTimeout(function() {
-					assert.equal(3, times);
-
-					delete object.someObject;
-
-					setTimeout(function() {
-						assert.equal(4, times);
-
-						object.someObject = {
-							someValue: 1000,
-							someSecondValue: 400
-						};
-
-						setTimeout(function() {
-							assert.equal(5, times);
-
-							done();
-						});
-					});
-				});
-			});
-		});
+		expect(listenerSpy).toHaveBeenCalledWith({
+			heyBuddy: {
+				howAreYou: 'I am fine!'
+			}
+		}, 2);
 	});
 
-	it('should automatically watch a complex object', function(done) {
-		var times = 0;
+	it('should detect collection changes', function() {
+		observer.watch('myCollection', listenerSpy);
 
-		object = {};
+		object.myCollection = {};
+		observer.deliverChangeRecords();
 
-		observer = new Observer(object);
-		observer.on('updated', function() {
-			times++;
-		});
+		expect(listenerSpy).toHaveBeenCalledWith({}, undefined);
 
-		object.someObject = {someObjectValue: 1};
+		object.myCollection.youGotSomePropertyNow = 1;
+		observer.deliverChangeRecords();
 
-		setTimeout(function() {
-			assert.equal(1, Object.keys(observer.childObservers).length);
-
-			object.someObject.someObjectValue = {
-				value: 200
-			};
-			
-			setTimeout(function() {
-				assert.equal(2, times);
-
-				object.someObject.someObjectValue.someAnotherValue = 0;
-				
-				setTimeout(function() {
-					assert.equal(3, times);
-
-					object.someObject.someObjectValue.anotherValue = 0;
-
-					setTimeout(function() {
-						assert.equal(4, times);
-
-						delete object.someObject.someObjectValue;
-
-						setTimeout(function() {
-							assert.equal(5, times);
-
-							done();
-						});
-					});
-				});
-			});
-		});
+		expect(listenerSpy).toHaveBeenCalledWith({youGotSomePropertyNow: 1}, {});
 	});
 });
