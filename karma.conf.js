@@ -23,7 +23,7 @@ module.exports = function(config) {
 		'src/renderer.js',
 		'src/Scanner.js',
 		'src/**/*.js',
-		'test/Observer.js'
+		'test/*.js'
 	],
 
 
