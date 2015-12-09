@@ -28,7 +28,7 @@ function isEqual(a, b) {
 				keys = Object.keys(a),
 				value;
 
-		if(keys.length !== Object.keys(b).length) {
+		if(!isObject(b) || keys.length !== Object.keys(b).length) {
 			return false;
 		}
 
@@ -56,7 +56,14 @@ function isEqual(a, b) {
 				return false;
 			}
 		}
+	} else if (isNumber(a)) {
+		if(a !== b) {
+			return false;
+		}
+
+		return true;
 	}
+
 	return true;
 }
 
