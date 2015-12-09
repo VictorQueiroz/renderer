@@ -40,9 +40,7 @@ inherits(Scope, Watcher, {
 	},
 
 	deliverChangeRecords: function() {
-		var deliverChangeRecords = bind(Watcher.prototype.deliverChangeRecords, this);
-
-		deliverChangeRecords();
+		Watcher.prototype.deliverChangeRecords.call(this);
 
 		if(this.$parent) {
 			this.$parent.deliverChangeRecords();
