@@ -352,8 +352,9 @@ describe('Compile', function() {
 				'<div rd-show-end></div>'
 			);
 
-			scope.counter = 0;
+			scope.counter = -1;
 			scope.shouldShowMe = true;
+			scope.deliverChangeRecords();
 
 			renderer.register('rdShow', function() {
 				return {
@@ -361,22 +362,25 @@ describe('Compile', function() {
 					link: function(scope, el, attrs) {
 						var method;
 
-						scope.$watch(attrs.rdShow, function(value) {
+						scope.watch(attrs.rdShow, function(value) {
 							method = value ? 'remove' : 'add';
 
 							el.classList[method]('hide');
+
 							scope.counter++;
 						});
 					}
 				};
 			});
 			renderer.compile(node)(scope);
+			scope.deliverChangeRecords();
 
 			expect(node.outerHTML).toEqual(
 				'<div><div rd-show-start="shouldShowMe">' +
 				'</div><div><span>1</span></div><div rd-' +
 				'show-end=""></div></div>'
 			);
+			scope.deliverChangeRecords();
 
 			scope.shouldShowMe = false;
 			scope.deliverChangeRecords();
@@ -409,6 +413,7 @@ describe('Compile', function() {
 			});
 
 			renderer.compile(node)(scope);
+			scope.deliverChangeRecords();
 
 			expect(linkSpy).toHaveBeenCalled();
 			expect(node.outerHTML).toEqual(
@@ -433,6 +438,7 @@ describe('Compile', function() {
 
 			var compile = new Compile(node, directiveRegistry);
 			compile.execute(scope);
+			scope.deliverChangeRecords();
 
 			expect(node.outerHTML).toEqual(
 				'<div>Hi! My name is, John Cena, and ' +
