@@ -301,7 +301,12 @@ NodeLink.prototype = {
 						return (lastValue = value);
 					};
 
-					scope.$watchCollection(attrs[attrName], parentWatcher);
+					scope.watch(attrs[attrName], parentWatcher);
+					dest.watch(attrName, function(value, oldValue) {
+						if(!isEqual(value, scope[key])) {
+							scope[key] = value;
+						}
+					});
 					break;
 			}
 		}, this);
