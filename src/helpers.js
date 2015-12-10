@@ -20,55 +20,71 @@ function isDefined(target) {
 	return isUndefined(target) === false;
 }
 
+function isDate(value) {
+  return toString.call(value) === '[object Date]';
+}
+
+function isRegExp(value) {
+  return toString.call(value) === '[object RegExp]';
+}
+
+function isWindow(value) {
+  return toString.call(value) === '[object Window]';
+}
+
 function inherit(parent, extra) {
 	return extend(Object.create(parent), extra);
 }
 
-function isEqual(a, b) {
-	var i = 0;
+function isEqual(o1, o2) {
+  var v1,
+      v2,
+      t1 = typeof o1,
+      t2 = typeof o2,
+      keys,
+      length;
 
-	if(isObject(a)) {
-		var key,
-				keys = Object.keys(a),
-				value;
+  if(o1 === o2) return true;
+  if(o1 === null || o2 === null) return false;
 
-		if(!isObject(b) || keys.length !== Object.keys(b).length) {
-			return false;
-		}
+  // Compares the type of each variable
+  if(t1 !== t2) return false;
 
-		for(; i < keys.length; i++) {
-			key = keys[i];
-			value = a[key];
+  if(isNumber(o1)) {
+    if(o1 != o2) {
+      return false;
+    }
+  } else if(isString(o1)) {
+    if(o1.length != o2.length || o1 != o2) {
+      return false;
+    }
+  } else if(isArray(o1)) {
+    // Check for difference lengths between arrays
+    if(o1.length != o2.length) return false;
 
-			if(isObject(value)){
-				if(!isEqual(value, b[key])) {
-					return false;
-				}
-			} else {
-				if(value !== b[key]) {
-					return false;
-				}
-			}
-		}
-	} else if (isString(a)) {
-		if(a.length !== b.length) {
-			return false;
-		}
+    length = o1.length;
 
-		for(; i < a.length; i++) {
-			if(a[i] !== b[i]) {
-				return false;
-			}
-		}
-	} else if (isNumber(a)) {
-		if(a !== b) {
-			return false;
-		}
+    while(length--) {
+      if(isEqual(o1[length], o2[length])) {
+        continue;
+      }
 
-		return true;
-	}
+      return false;
+    }
+  } else if (isObject(o1)) {
+    keys = Object.keys(o1);
+    length = keys.length;
 
-	return true;
+    while(length--) {
+      if(isEqual(o1[keys[length]], o2[keys[length]])) {
+        continue;
+      }
+
+      return false;
+    }
+  }
+
+  return true;
 }
 
 function first(array) {
