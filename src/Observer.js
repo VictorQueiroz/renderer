@@ -10,7 +10,8 @@ Observer.prototype = {
 				path,
 				keys = Object.keys(this.watchers),
 				value,
-				watcher;
+				watcher,
+				oldValue;
 
 		for(i = 0, ii = keys.length; i < ii; i++) {
 			path = keys[i];
