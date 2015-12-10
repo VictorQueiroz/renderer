@@ -178,6 +178,7 @@ renderer.compile = function(node) {
 extend(renderer, {
 	Scope: Scope,
 	Compile: Compile,
+
 	_registry: directiveRegistry
 });
 
