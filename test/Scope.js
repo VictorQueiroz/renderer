@@ -4,7 +4,7 @@ describe('Scope', function() {
 	beforeEach(function() {
 		scope = new Scope();
 	});
-	
+
   describe('watch()', function() {
     it('should watch a property', function() {
       var listenerSpy = jasmine.createSpy();
@@ -21,8 +21,6 @@ describe('Scope', function() {
 
       scope.watch('another.deep.property.here', watcherSpy);
       scope.deliverChangeRecords();
-
-      expect(watcherSpy).toHaveBeenCalledWith(undefined, undefined);
 
       scope.another.deep.property.here = 0;
       scope.deliverChangeRecords();
