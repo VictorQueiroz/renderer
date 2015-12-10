@@ -4,6 +4,8 @@ function Scope(parent) {
 	if(parent) {
 		this.parentScope = parent;
 	}
+
+	this.childScopes = [];
 }
 
 inherits(Scope, Watcher, {
