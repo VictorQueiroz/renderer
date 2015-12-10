@@ -347,10 +347,10 @@ NodeLink.prototype = {
 		if(this.scope) {
 			switch(this.scope.type) {
 			case NodeLink.SCOPE_CHILD:
-				newScope = scope.$new();
+				newScope = scope.clone();
 				break;
 			case NodeLink.SCOPE_ISOLATED:
-				newScope = scope.$new(true);
+				newScope = scope.clone(true);
 				this.directiveBindings(scope, newScope, this.scope.bindings);
 				break;
 			}
