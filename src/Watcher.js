@@ -3,6 +3,7 @@ function Watcher () {
 
 	this.observer = new Observer(this);
 }
+
 inherits(Watcher, EventEmitter, {
 	deliverChangeRecords: function() {
 		this.observer.deliverChangeRecords();
@@ -33,10 +34,10 @@ inherits(Watcher, EventEmitter, {
 	},
 
 	watchGroup: function(exps, listener) {
-		var observer = this.observer;
+		var watcher = this;
 
 		forEach(exps, function(exp) {
-			observer.watch(exp, listener);
+			watcher.watch(exp, listener);
 		});
 	}
 });
