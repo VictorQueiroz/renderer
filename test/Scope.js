@@ -35,4 +35,12 @@ describe('Scope', function() {
       expect(watcherSpy).toHaveBeenCalledWith(1, 0);
     });
   });
+
+  describe('clone()', function() {
+    it('should create a child scope', function() {
+      var child = scope.clone();
+
+      expect(child.parentScope).toBe(scope);
+    });
+  });
 });
