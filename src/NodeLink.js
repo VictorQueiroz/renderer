@@ -210,8 +210,8 @@ NodeLink.prototype = {
 		return value || null;
 	},
 
-	instantiate: function(directive, Controller) {
-		return new Controller();
+	instantiate: function(Controller, scope, node, attributes, transcludeFn) {
+		return new Controller(scope, node, attributes, transcludeFn);
 	},
 
 	setupControllers: function(scope, node, attributes, transcludeFn) {
@@ -225,7 +225,7 @@ NodeLink.prototype = {
 			directive = this.context.controllers[keys[i]];
 
 			if(isFunction(directive.controller)) {
-				controller = this.instantiate(directive, directive.controller);
+				controller = this.instantiate(directive.controller, scope, node, attributes, transcludeFn);
 			} else {
 				continue;
 			}
