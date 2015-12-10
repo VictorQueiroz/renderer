@@ -134,8 +134,8 @@ describe('Compile', function() {
 				return {
 					scope: true,
 					link: function(scope) {
-						expect(scope).not.toBe(scope.$parent);
-						expect(scope instanceof scope.$parent.$$ChildScope).toBeTruthy();
+						expect(scope).not.toBe(scope.parentScope);
+						expect(scope instanceof scope.parentScope.ChildScopeClass).toBeTruthy();
 						expect(scope.someDeepProperty.but.shouldBeOnChildScope).toEqual(1);
 
 						scopeSpy(scope);
@@ -236,11 +236,11 @@ describe('Compile', function() {
 
 						scope.inheritance = 0;
 						scope.deliverChangeRecords();
-						expect(scope.$parent.myArrayList).toBe(0);
+						expect(scope.parentScope.myArrayList).toBe(0);
 
 						scope.inheritance = 1;
 						scope.deliverChangeRecords();
-						expect(scope.$parent.myArrayList).toBe(1);
+						expect(scope.parentScope.myArrayList).toBe(1);
 
 						scopeSpy();
 					}

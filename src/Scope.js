@@ -2,7 +2,7 @@ function Scope(parent) {
 	Watcher.call(this);
 
 	if(parent) {
-		this.$parent = parent;
+		this.parentScope = parent;
 	}
 }
 
