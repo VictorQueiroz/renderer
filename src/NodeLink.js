@@ -291,22 +291,18 @@ NodeLink.prototype = {
 					var parentWatcher = function(value) {
 						if(!isEqual(value, dest[key])) {
 							// we are out of sync and need to copy
-							if(!isEqual(value, lastValue)) {
-								// parent changed and it has precedence
-								dest[key] = value;
-							} else {
-								parentSet(scope, value = dest[key]);
+              if(!isEqual(value, lastValue)) {
+                // parent changed and it has precedence
+                dest[key] = value;
+              } else {
+                parentSet(scope, value = dest[key]);
 							}
 						}
+
 						return (lastValue = value);
 					};
 
 					scope.watch(attrs[attrName], parentWatcher);
-					dest.watch(attrName, function(value, oldValue) {
-						if(!isEqual(value, scope[key])) {
-							scope[key] = value;
-						}
-					});
 					break;
 			}
 		}, this);
