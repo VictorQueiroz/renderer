@@ -2,24 +2,14 @@ function Scope(parent) {
 	Watcher.call(this);
 
 	if(parent) {
-		this.$parent = parent;
+		this.parentScope = parent;
 	}
+
+	this.childScopes = [];
 }
 
 inherits(Scope, Watcher, {
-	$$createChildScopeClass: function() {
-		var parent = this;
-
-		function ChildScope() {
-			Scope.call(this, parent);
-		}
-
-		ChildScope.prototype = parent;
-
-		return ChildScope;
-	},
-
-	$new: function(isolate, parent) {
+	clone: function(isolate, parent) {
 		var child;
 
 		parent = parent || this;
@@ -29,23 +19,59 @@ inherits(Scope, Watcher, {
 		} else {
 			// Only create a child scope class if somebody asks for one,
 			// but cache it to allow the VM to optimize lookups.
-			if (!this.$$ChildScope) {
-				this.$$ChildScope = this.$$createChildScopeClass();
+			if (!this.ChildScopeClass) {
+				this.ChildScopeClass = Scope.createChildScopeClass(this);
 			}
 
-			child = new this.$$ChildScope();
+			child = new this.ChildScopeClass();
 		}
+
+    var childScopes = this.childScopes,
+        lastChildScopeIndex = childScopes.length - 1,
+        nextChildScopeIndex = childScopes.length + 1;
+
+    if(childScopes.length) {
+      childScopes[lastChildScopeIndex].nextSibling = child;
+    }
+
+		childScopes[nextChildScopeIndex] = child;
+
+    child.on('destroy', function() {
+      var index = childScopes.length;
+
+      while(index--) {
+        if(childScopes[index] == child) {
+          childScopes.splice(index, 1);
+
+          break;
+        }
+      }
+    });
 
 		return child;
 	},
 
 	deliverChangeRecords: function() {
-		Watcher.prototype.deliverChangeRecords.call(this);
+    if(this.parentScope) {
+      this.parentScope.deliverChangeRecords();
+    }
 
-		if(this.$parent) {
-			this.$parent.deliverChangeRecords();
-		}
+    Watcher.prototype.deliverChangeRecords.call(this);
 
 		return this;
-	}
+	},
+
+  destroy: function() {
+    this.emit('destroy');
+  }
+}, {
+  createChildScopeClass: function(parent) {
+    function ChildScope() {
+      Scope.call(this, parent);
+    }
+
+    ChildScope.prototype = parent;
+
+    return ChildScope;
+  }
 });

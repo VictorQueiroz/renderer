@@ -12,8 +12,6 @@ describe('Watcher', function() {
 			watcher.watch('somePropertyHere', listenerSpy);
 			watcher.deliverChangeRecords();
 
-			expect(listenerSpy).toHaveBeenCalledWith(undefined, undefined);
-
 			watcher.somePropertyHere = [];
 			watcher.deliverChangeRecords();
 			expect(listenerSpy).toHaveBeenCalledWith([], undefined);

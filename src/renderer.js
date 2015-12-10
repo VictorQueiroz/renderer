@@ -106,7 +106,7 @@ renderer.register = function(name, factory) {
 var expsCache = {};
 
 renderer.parse = function(exp, cache) {
-	if(expsCache.hasOwnProperty(exp) && isUndefined(cache)) {
+	if(expsCache.hasOwnProperty(exp) && cache != false) {
 		return expsCache[exp];
 	}
 
@@ -178,6 +178,7 @@ renderer.compile = function(node) {
 extend(renderer, {
 	Scope: Scope,
 	Compile: Compile,
+
 	_registry: directiveRegistry
 });
 

@@ -4,7 +4,7 @@ describe('Scope', function() {
 	beforeEach(function() {
 		scope = new Scope();
 	});
-	
+
   describe('watch()', function() {
     it('should watch a property', function() {
       var listenerSpy = jasmine.createSpy();
@@ -22,8 +22,6 @@ describe('Scope', function() {
       scope.watch('another.deep.property.here', watcherSpy);
       scope.deliverChangeRecords();
 
-      expect(watcherSpy).toHaveBeenCalledWith(undefined, undefined);
-
       scope.another.deep.property.here = 0;
       scope.deliverChangeRecords();
 
@@ -33,6 +31,14 @@ describe('Scope', function() {
       scope.deliverChangeRecords();
 
       expect(watcherSpy).toHaveBeenCalledWith(1, 0);
+    });
+  });
+
+  describe('clone()', function() {
+    it('should create a child scope', function() {
+      var child = scope.clone();
+
+      expect(child.parentScope).toBe(scope);
     });
   });
 });

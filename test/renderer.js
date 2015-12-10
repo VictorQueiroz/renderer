@@ -1,19 +1,29 @@
 describe('renderer', function() {
+  var registerTestDirective = function() {
+    renderer.register('appVersion', function() {
+      return {
+        template: '{{ appVersion }}',
+        scope: {},
+        link: function (scope, element, attrs) {
+          scope.appVersion = '1.0.0';
+        }
+      }
+    });
+  };
+
+  afterEach(function() {
+    renderer.clearRegistry();
+  });
+
 	it('should register a directive', function() {
-		renderer.register('appVersion', function() {
-			return {
-				template: '{{ appVersion }}',
-				scope: {},
-				link: function (scope, element, attrs) {
-					scope.appVersion = '1.0.0';
-				}
-			}
-		});
+		registerTestDirective();
 
 		expect(directiveRegistry.hasOwnProperty('appVersion')).toBeTruthy();
 	});
 
 	it('should get a directive', function() {
+    registerTestDirective();
+
 		var instances = renderer.getDirectives('appVersion');
 
 		expect(instances.length).toBe(1);
@@ -22,6 +32,8 @@ describe('renderer', function() {
 	});
 
 	it('should clear the registry', function() {
+    registerTestDirective();
+
 		expect(Object.keys(directiveRegistry).length).toBe(2);
 
 		renderer.clearRegistry();

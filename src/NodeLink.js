@@ -210,8 +210,8 @@ NodeLink.prototype = {
 		return value || null;
 	},
 
-	instantiate: function(directive, Controller) {
-		return new Controller();
+	instantiate: function(Controller, scope, node, attributes, transcludeFn) {
+		return new Controller(scope, node, attributes, transcludeFn);
 	},
 
 	setupControllers: function(scope, node, attributes, transcludeFn) {
@@ -225,7 +225,7 @@ NodeLink.prototype = {
 			directive = this.context.controllers[keys[i]];
 
 			if(isFunction(directive.controller)) {
-				controller = this.instantiate(directive, directive.controller);
+				controller = this.instantiate(directive.controller, scope, node, attributes, transcludeFn);
 			} else {
 				continue;
 			}
@@ -291,22 +291,18 @@ NodeLink.prototype = {
 					var parentWatcher = function(value) {
 						if(!isEqual(value, dest[key])) {
 							// we are out of sync and need to copy
-							if(!isEqual(value, lastValue)) {
-								// parent changed and it has precedence
-								dest[key] = value;
-							} else {
-								parentSet(scope, value = dest[key]);
+              if(!isEqual(value, lastValue)) {
+                // parent changed and it has precedence
+                dest[key] = value;
+              } else {
+                parentSet(scope, value = dest[key]);
 							}
 						}
+
 						return (lastValue = value);
 					};
 
 					scope.watch(attrs[attrName], parentWatcher);
-					dest.watch(attrName, function(value, oldValue) {
-						if(!isEqual(value, scope[key])) {
-							scope[key] = value;
-						}
-					});
 					break;
 			}
 		}, this);
@@ -347,10 +343,10 @@ NodeLink.prototype = {
 		if(this.scope) {
 			switch(this.scope.type) {
 			case NodeLink.SCOPE_CHILD:
-				newScope = scope.$new();
+				newScope = scope.clone();
 				break;
 			case NodeLink.SCOPE_ISOLATED:
-				newScope = scope.$new(true);
+				newScope = scope.clone(true);
 				this.directiveBindings(scope, newScope, this.scope.bindings);
 				break;
 			}
