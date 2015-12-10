@@ -344,7 +344,7 @@ function bind(callback, context) {
 	};
 }
 
-function inherits (ctor, superCtor, attrs) {
+function inherits (ctor, superCtor, attrs, ctorAttrs) {
 	if (ctor === undefined || ctor === null)
 		throw new TypeError('The constructor to "inherits" must not be ' +
 												'null or undefined');
@@ -363,6 +363,10 @@ function inherits (ctor, superCtor, attrs) {
 	if(attrs) {
 		extend(ctor.prototype, attrs);
 	}
+
+  if(ctorAttrs) {
+    extend(ctor, ctorAttrs);
+  }
 }
 
 var id = 0;
