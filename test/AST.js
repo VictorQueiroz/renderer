@@ -20,6 +20,27 @@ describe('AST', function() {
 		});
 	});
 
+  it('should compile assignment expressions', function() {
+    expect(ast.ast('a = 1;')).toEqual({
+      "type": "Program",
+      "body": [{
+        "type": "ExpressionStatement",
+        "expression": {
+          "type": "AssignmentExpression",
+          "operator": "=",
+          "left": {
+            "type": "Identifier",
+            "name": "a"
+          },
+          "right": {
+            "type": "Literal",
+            "value": '1'
+          }
+        }
+      }]
+    });
+  });
+
 	it('should compile a simple expression', function() {
 		expect(ast.ast('a.b.c.d')).toEqual({
 	    "type": "Program",
