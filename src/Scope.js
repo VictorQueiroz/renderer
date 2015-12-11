@@ -51,6 +51,14 @@ inherits(Scope, Watcher, {
 		return child;
 	},
 
+  broadcast: function(name, fn) {
+    if(this.parentScope) {
+      this.parentScope.broadcast(name, fn);
+    }
+
+    this.emit(name, fn);
+  },
+
 	deliverChangeRecords: function() {
     if(this.parentScope) {
       this.parentScope.deliverChangeRecords();
