@@ -325,6 +325,25 @@ function forEach (array, iterator, context) {
 	return array;
 }
 
+function map (array, iterator, context) {
+  var i,
+      cloned = isArray(array) ? [] : {};
+
+  if(isArray(array)) {
+    for(i = 0; i < array.length; i++) {
+      cloned[i] = iterator.call(context, array[i], i, array);
+    }
+  } else if (isObject(array)) {
+    var keys = Object.keys(array);
+
+    for(i = 0; i < keys.length; i++) {
+      cloned[keys[i]] = iterator.call(context, array[keys[i]], keys[i], array);
+    }
+  }
+
+  return cloned;
+}
+
 function camelCase (str) {
 	return (str = str.replace(/[^A-z]/g, ' ')) && lowercase(str).replace(/(?:^\w|[A-Z]|\b\w|\s+)/g, function(match, index) {
 		if (+match === 0) return ""; // or if (/\s+/.test(match)) for white spaces
@@ -351,12 +370,8 @@ function last(array) {
 }
 
 function bind(callback, context) {
-	var args = toArray(arguments).slice(1);
-
 	return function() {
-		args = args.concat(toArray(arguments));
-
-		return callback.apply(args[0], args.slice(1));
+		return callback.apply(context, arguments);
 	};
 }
 

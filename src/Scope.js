@@ -1,3 +1,5 @@
+var EMPTY = '';
+
 function Scope(parent) {
 	Watcher.call(this);
 
@@ -9,6 +11,34 @@ function Scope(parent) {
 }
 
 inherits(Scope, Watcher, {
+  watch: function(exp, listener) {
+    var normalWatcher = bind(Watcher.prototype.watch, this);
+
+    if(Scope.isComplexExpression(exp)) {
+      var finder = Scope.extractExpressions(exp),
+      identifiers = finder.identifiers,
+      exps = finder.allExps.map(function(exp) {
+        return exp.join('.');
+      });
+
+      var oldValue;
+
+      return this.watchGroup(exps.concat(identifiers), function() {
+        var value = this.eval(exp);
+
+        listener.call(this, value, oldValue);
+
+        oldValue = clone(value);
+      });
+    } else {
+      return normalWatcher(exp, listener);
+    }
+  },
+
+  eval: function(exp) {
+    return renderer.parse(exp)(this);
+  },
+
 	clone: function(isolate, parent) {
 		var child;
 
@@ -26,30 +56,24 @@ inherits(Scope, Watcher, {
 			child = new this.ChildScopeClass();
 		}
 
-    var childScopes = this.childScopes,
-        lastChildScopeIndex = childScopes.length - 1,
-        nextChildScopeIndex = childScopes.length + 1;
+    var childScopeIndex = this.childScopes.length;
 
-    if(childScopes.length) {
-      childScopes[lastChildScopeIndex].nextSibling = child;
-    }
-
-		childScopes[nextChildScopeIndex] = child;
+		this.childScopes[childScopeIndex] = child;
 
     child.on('destroy', function() {
-      var index = childScopes.length;
-
-      while(index--) {
-        if(childScopes[index] == child) {
-          childScopes.splice(index, 1);
-
-          break;
-        }
-      }
+      this.parentScope.childScopes.splice(childScopeIndex, 1);
     });
 
 		return child;
 	},
+
+  broadcast: function(name, fn) {
+    if(this.parentScope) {
+      this.parentScope.broadcast(name, fn);
+    }
+
+    this.emit(name, fn);
+  },
 
 	deliverChangeRecords: function() {
     if(this.parentScope) {
@@ -65,6 +89,30 @@ inherits(Scope, Watcher, {
     this.emit('destroy');
   }
 }, {
+  extractExpressions: function(exps) {
+    var lexer = new Lexer(),
+        astBuilder = new AST(lexer),
+        astFinder = new ASTFinder(astBuilder);
+
+    return astFinder.find(exps) && astFinder;
+  },
+
+  isComplexExpression: function(exp) {
+    var i,
+        token,
+        tokens = this.complexTokens.split(EMPTY);
+
+    for(i = tokens.length - 1; i >= 0; i--) {
+      token = tokens[i];
+
+      if(exp.indexOf(token) > -1) {
+        return true;
+      }
+    }
+
+    return false;
+  },
+
   createChildScopeClass: function(parent) {
     function ChildScope() {
       Scope.call(this, parent);
@@ -73,5 +121,7 @@ inherits(Scope, Watcher, {
     ChildScope.prototype = parent;
 
     return ChildScope;
-  }
+  },
+
+  complexTokens: '[]()&!`/*+-='
 });

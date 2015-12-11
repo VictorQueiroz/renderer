@@ -12,9 +12,10 @@ ASTFinder.prototype = {
 		var computeds, expressions, objects;
 		var ast = this.astBuilder.ast(exp);
 
-		this.objects      = objects = {};
-		this.computeds    = computeds = {};
-		this.expressions  = expressions = {};
+    this.objects      = objects = {};
+    this.computeds    = computeds = {};
+    this.expressions  = expressions = {};
+    this.identifiers  = [];
 
 		this.recurse(ast);
 
@@ -39,7 +40,7 @@ ASTFinder.prototype = {
 			return exp;
 		});
 
-		return this.expressions;
+		return (this.allExps = values(this.expressions));
 	},
 
 	parseProgram: function(ast) {
@@ -96,7 +97,9 @@ ASTFinder.prototype = {
 	},
 
 	parseIdentifier: function(ast, id, recursion) {
+    this.identifiers.push(ast.name);
 		this.expressions[id].push(ast.name);
+
 		recursion(id);
 	},
 
