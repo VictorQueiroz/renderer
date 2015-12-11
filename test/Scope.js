@@ -6,8 +6,13 @@ describe('Scope', function() {
 	});
 
   describe('watch()', function() {
+    var listenerSpy;
+
+    beforeEach(function() {
+      listenerSpy = jasmine.createSpy();
+    });
+
     it('should watch a property', function() {
-      var listenerSpy = jasmine.createSpy();
       scope.watch('someProperty', listenerSpy);
 
       scope.someProperty = 'someValueHere';
@@ -17,20 +22,18 @@ describe('Scope', function() {
     });
 
     it('should deep properties', function() {
-      var watcherSpy = jasmine.createSpy();
-
-      scope.watch('another.deep.property.here', watcherSpy);
+      scope.watch('another.deep.property.here', listenerSpy);
       scope.deliverChangeRecords();
 
       scope.another.deep.property.here = 0;
       scope.deliverChangeRecords();
 
-      expect(watcherSpy).toHaveBeenCalledWith(0, undefined);
+      expect(listenerSpy).toHaveBeenCalledWith(0, undefined);
 
       scope.another.deep.property.here += 1;
       scope.deliverChangeRecords();
 
-      expect(watcherSpy).toHaveBeenCalledWith(1, 0);
+      expect(listenerSpy).toHaveBeenCalledWith(1, 0);
     });
   });
 
