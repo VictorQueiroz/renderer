@@ -44,4 +44,29 @@ describe('Scope', function() {
       expect(child.parentScope).toBe(scope);
     });
   });
+
+  describe('broadcast()', function() {
+    var scope,
+        listenerSpy,
+        deepChildScope;
+
+    beforeEach(function() {
+      scope = new Scope(),
+      listenerSpy = jasmine.createSpy(),
+      deepChildScope = scope;
+
+      for(var i = 0; i < 100; i++) {
+        deepChildScope = deepChildScope.clone();
+      }
+    });
+
+    it('should propagate events through the parents of a scope', function() {
+      scope.on('update', listenerSpy);
+
+      for(var i = 0; i < 10; i++) {
+        deepChildScope.broadcast('update', i);
+        expect(listenerSpy).toHaveBeenCalledWith(i);
+      }
+    });
+  });
 });
