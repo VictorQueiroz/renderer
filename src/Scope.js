@@ -1,3 +1,5 @@
+var EMPTY = '';
+
 function Scope(parent) {
 	Watcher.call(this);
 
@@ -9,6 +11,34 @@ function Scope(parent) {
 }
 
 inherits(Scope, Watcher, {
+  watch: function(exp, listener) {
+    var normalWatcher = bind(Watcher.prototype.watch, this);
+
+    if(Scope.isComplexExpression(exp)) {
+      var finder = Scope.extractExpressions(exp),
+      identifiers = finder.identifiers,
+      exps = finder.allExps.map(function(exp) {
+        return exp.join('.');
+      });
+
+      var oldValue;
+
+      return this.watchGroup(exps.concat(identifiers), function() {
+        var value = this.eval(exp);
+
+        listener.call(this, value, oldValue);
+
+        oldValue = clone(value);
+      });
+    } else {
+      return normalWatcher(exp, listener);
+    }
+  },
+
+  eval: function(exp) {
+    return renderer.parse(exp)(this);
+  },
+
 	clone: function(isolate, parent) {
 		var child;
 
@@ -59,6 +89,30 @@ inherits(Scope, Watcher, {
     this.emit('destroy');
   }
 }, {
+  extractExpressions: function(exps) {
+    var lexer = new Lexer(),
+        astBuilder = new AST(lexer),
+        astFinder = new ASTFinder(astBuilder);
+
+    return astFinder.find(exps) && astFinder;
+  },
+
+  isComplexExpression: function(exp) {
+    var i,
+        token,
+        tokens = this.complexTokens.split(EMPTY);
+
+    for(i = tokens.length - 1; i >= 0; i--) {
+      token = tokens[i];
+
+      if(exp.indexOf(token) > -1) {
+        return true;
+      }
+    }
+
+    return false;
+  },
+
   createChildScopeClass: function(parent) {
     function ChildScope() {
       Scope.call(this, parent);
@@ -67,5 +121,7 @@ inherits(Scope, Watcher, {
     ChildScope.prototype = parent;
 
     return ChildScope;
-  }
+  },
+
+  complexTokens: '[]()&!`/*+-='
 });
