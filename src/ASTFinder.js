@@ -12,9 +12,10 @@ ASTFinder.prototype = {
 		var computeds, expressions, objects;
 		var ast = this.astBuilder.ast(exp);
 
-		this.objects      = objects = {};
-		this.computeds    = computeds = {};
-		this.expressions  = expressions = {};
+    this.objects      = objects = {};
+    this.computeds    = computeds = {};
+    this.expressions  = expressions = {};
+    this.identifiers  = [];
 
 		this.recurse(ast);
 
