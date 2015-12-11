@@ -39,7 +39,7 @@ ASTFinder.prototype = {
 			return exp;
 		});
 
-		return this.expressions;
+		return (this.allExps = values(this.expressions));
 	},
 
 	parseProgram: function(ast) {
