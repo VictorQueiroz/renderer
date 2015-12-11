@@ -96,7 +96,9 @@ ASTFinder.prototype = {
 	},
 
 	parseIdentifier: function(ast, id, recursion) {
+    this.identifiers.push(ast.name);
 		this.expressions[id].push(ast.name);
+
 		recursion(id);
 	},
 
