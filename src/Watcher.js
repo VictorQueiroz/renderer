@@ -26,7 +26,7 @@ inherits(Watcher, EventEmitter, {
 			firstListener = true;
 		}
 
-		this.observer.watch(exp, listener);
+		this.observer.watch(exp, bind(listener, this));
 
 		if(firstListener) {
 			this.observer.fire(exp);
