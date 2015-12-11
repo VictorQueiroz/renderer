@@ -36,6 +36,31 @@ describe('Scope', function() {
       expect(listenerSpy).toHaveBeenCalledWith(1, 0);
     });
 
+    it('should watch complex expressions', function() {
+      scope.watch('isUserActive && callMeExpression() && users[index]', listenerSpy);
+      scope.deliverChangeRecords();
+
+      expect(listenerSpy).toHaveBeenCalledWith(undefined, undefined);
+
+      scope.isUserActive = true;
+
+      scope.callMeExpression = function() {
+        return true;
+      };
+
+      scope.users = [ 'First user', 'Second user' ];
+      scope.index = 0;
+      scope.deliverChangeRecords();
+
+      expect(listenerSpy).toHaveBeenCalledWith('First user', undefined);
+
+      scope.index++;
+      scope.deliverChangeRecords();
+
+      expect(listenerSpy).toHaveBeenCalledWith('Second user', 'First user');
+    });
+  });
+
   describe('destroy()', function() {
     var scope,
         childScope;
