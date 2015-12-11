@@ -303,6 +303,13 @@ NodeLink.prototype = {
 					};
 
 					scope.watch(attrs[attrName], parentWatcher);
+
+          // When the property gets changed in the
+          // destination scope, the parent scope gets
+          // updated with the new value, as it should
+          dest.watch(key, function(value) {
+            parentWatcher(get(scope, attrs[attrName]));
+          });
 					break;
 			}
 		}, this);

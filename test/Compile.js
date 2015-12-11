@@ -242,6 +242,18 @@ describe('Compile', function() {
 						scope.deliverChangeRecords();
 						expect(scope.parentScope.myArrayList).toBe(1);
 
+            scope.inheritance = [];
+            scope.deliverChangeRecords();
+            expect(scope.parentScope.myArrayList).toEqual([]);
+
+            scope.parentScope.myArrayList = null;
+            scope.deliverChangeRecords();
+            expect(scope.inheritance).toBe(null);
+
+            scope.inheritance = [1,2,3,4,5,6];
+            scope.deliverChangeRecords();
+            expect(scope.parentScope.myArrayList).toEqual([1,2,3,4,5,6]);
+
 						scopeSpy();
 					}
 				}
