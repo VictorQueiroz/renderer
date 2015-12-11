@@ -26,26 +26,12 @@ inherits(Scope, Watcher, {
 			child = new this.ChildScopeClass();
 		}
 
-    var childScopes = this.childScopes,
-        lastChildScopeIndex = childScopes.length - 1,
-        nextChildScopeIndex = childScopes.length + 1;
+    var childScopeIndex = this.childScopes.length;
 
-    if(childScopes.length) {
-      childScopes[lastChildScopeIndex].nextSibling = child;
-    }
-
-		childScopes[nextChildScopeIndex] = child;
+		this.childScopes[childScopeIndex] = child;
 
     child.on('destroy', function() {
-      var index = childScopes.length;
-
-      while(index--) {
-        if(childScopes[index] == child) {
-          childScopes.splice(index, 1);
-
-          break;
-        }
-      }
+      this.parentScope.childScopes.splice(childScopeIndex, 1);
     });
 
 		return child;
