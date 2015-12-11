@@ -35,6 +35,32 @@ describe('Scope', function() {
 
       expect(listenerSpy).toHaveBeenCalledWith(1, 0);
     });
+
+  describe('destroy()', function() {
+    var scope,
+        childScope;
+
+    beforeEach(function() {
+      scope = new Scope();
+      childScope = scope.clone();
+    });
+
+    it('should destroy a scope and eliminate all the records of the scope on its parents', function() {
+      for(var i = 0; i < 10; i++) {
+        scope.clone();
+      }
+
+      expect(scope.childScopes.length).toBe(11);
+      expect(scope.childScopes[0]).toBe(childScope);
+
+      childScope.destroy();
+
+      expect(scope.childScopes.length).toBe(10);
+
+      for(var i = 0; i < scope.childScopes.length; i++) {
+        expect(scope.childScopes[i]).not.toBe(childScope);
+      }
+    });
   });
 
   describe('clone()', function() {
