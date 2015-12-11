@@ -370,12 +370,8 @@ function last(array) {
 }
 
 function bind(callback, context) {
-	var args = toArray(arguments).slice(1);
-
 	return function() {
-		args = args.concat(toArray(arguments));
-
-		return callback.apply(args[0], args.slice(1));
+		return callback.apply(context, arguments);
 	};
 }
 
