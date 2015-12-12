@@ -19,9 +19,11 @@ Observer.prototype = {
 			watcher = this.watchers[path]
 			oldValue = watcher.oldValue;
 
-			if(isObject(value) && !isEqual(value, oldValue)) {
-				this.fire(path);
-			} else if (value !== oldValue) {
+			if(isObject(value)) {
+				if(!isEqual(value, oldValue)) {
+					this.fire(path);
+				}
+			} else if (value != oldValue) {
 				this.fire(path);
 			}
 
