@@ -102,6 +102,8 @@ Scanner.prototype = {
 							return;
 						}
 
+            attrs[name] = interpolate.compile(scope);
+
 						scope.watchGroup(interpolate.exps, function() {
 							attrs.$set(name, interpolate.compile(scope));
 						});
