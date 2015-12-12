@@ -30,4 +30,7 @@ renderer.register('widget', function() {
 		}
 	};
 });
+
+// Compile the nodes
+renderer.compile(document.body)(new renderer.Scope());
 ```

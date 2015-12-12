@@ -381,8 +381,7 @@ NodeLink.prototype = {
 
 		childLink.execute(scope, this.transcludeFn);
 
-		i = links.post.length - 1;
-		for(; i >= 0; i--) {
+		for(i = links.post.length - 1; i >= 0; i--) {
 			link = links.post[i];
 
 			this.callLink(

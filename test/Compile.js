@@ -286,11 +286,7 @@ describe('Compile', function() {
 			renderer.compile(node)(scope);
 
 			expect(links).toEqual(1);
-			expect(node.outerHTML).toEqual(
-				'<div><div class="change-color-directive" ' +
-				'change-color-directive="" style="background-color: ' +
-				'rgb(255, 255, 255);"></div></div>'
-			);
+			expect(node.querySelector('.change-color-directive').getAttribute('style')).toBe('background-color: rgb(255, 255, 255); ');
 
 			renderer.clearRegistry();
 		});
@@ -315,11 +311,7 @@ describe('Compile', function() {
 			renderer.compile(node)(scope);
 
 			expect(links).toEqual(1);
-			expect(node.outerHTML).toEqual(
-				'<div><div class="change-color-directive" ' +
-				'change-color-directive="" style="background-color: ' +
-				'rgb(255, 255, 255);"></div></div>'
-			);
+			expect(node.querySelector('.change-color-directive').getAttribute('style')).toBe('background-color: rgb(255, 255, 255); ');
 
 			renderer.clearRegistry();
 		});
@@ -344,13 +336,7 @@ describe('Compile', function() {
 			renderer.compile(node)(scope);
 
 			expect(links).toEqual(1);
-			expect(node.outerHTML).toEqual(
-				'<div><change-color-directive class="change-color-directive"' +
-				' change-color-directive="" style="background-color: rgb(255, ' +
-				'255, 255);"></change-color-directive></div>'
-			);
-
-			renderer.clearRegistry();
+			expect(node.querySelector('change-color-directive').getAttribute('style')).toBe('background-color: rgb(255, 255, 255); ');
 		});
 	});
 
@@ -677,6 +663,10 @@ describe('Compile', function() {
 	});
 
 	describe('Transclusion', function() {
+    beforeEach(function() {
+      renderer.clearRegistry();
+    });
+
 		it('should render content transclude directives', function() {
 			node = document.createElement('span');
 			node.appendChild(createNode(

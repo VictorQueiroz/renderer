@@ -415,7 +415,7 @@ ASTCompiler.prototype = {
 		var right;
 		var grammar = this.grammar;
 
-		recurse = recurse || this.recurse.bind(this);
+		recurse = recurse || bind(this.recurse, this);
 
 		forEach(ast.body, function(exp, pos) {
 			recurse(exp.expression, undefined, undefined, function(expr) { right = expr; });
