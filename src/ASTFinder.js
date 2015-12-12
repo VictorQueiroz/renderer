@@ -122,7 +122,7 @@ ASTFinder.prototype = {
 
 	recurse: function(ast, id, recursion) {
 		id          = id || this.nextId();
-		recursion   = recursion && recursion.bind(this) || noop;
+		recursion   = recursion && bind(recursion, this) || noop;
 
 		if(!this.expressions.hasOwnProperty(id)) {
 			this.expressions[id] = [];

@@ -389,7 +389,7 @@ function inherits (ctor, superCtor, attrs, ctorAttrs) {
 												'have a prototype');
 
 	ctor.super_ = superCtor;
-	Object.setPrototypeOf(ctor.prototype, superCtor.prototype);
+	ctor.prototype = Object.create(superCtor.prototype);
 
 	if(attrs) {
 		extend(ctor.prototype, attrs);
