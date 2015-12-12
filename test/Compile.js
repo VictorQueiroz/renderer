@@ -476,6 +476,47 @@ describe('Compile', function() {
 				'i-just-changed-this-value"></span></div>'
 			);
 		});
+
+    it('should auto compile the interpolated attribute on pre link at priority 100', function() {
+      node = createNode(
+        '<span attribute="{{ someExpHere || 1 }}"></span>'
+      );
+
+      var html = {};
+
+      renderer.register('span', function() {
+        return {
+          compile: function() {
+            return {
+              pre: function(scope, el) {
+                expect(el.outerHTML).toEqual(
+                  '<span attribute="1"></span>'
+                );
+              },
+
+              post: function(scope, el) {
+              }
+            }
+          }
+        }
+      });
+      renderer.register('span', function() {
+        return {
+          priority: 200,
+          compile: function() {
+            return {
+              pre: function(scope, el) {
+                expect(el.outerHTML).toEqual(
+                  '<span attribute="{{ someExpHere || 1 }}"></span>'
+                );
+              }
+            }
+          }
+        }
+      });
+
+      renderer.compile(node)(scope);
+    });
 	});
 
 	describe('Priority', function() {
