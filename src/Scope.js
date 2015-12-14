@@ -85,6 +85,30 @@ inherits(Scope, Watcher, {
 		return this;
 	},
 
+  apply: function(fn) {
+    var topLevelScope = this.topLevelScope;
+
+    try {
+      Scope.beginPhase(topLevelScope, 'apply');
+
+      try {
+        return this.eval(fn);
+      } finally {
+        Scope.clearPhase(topLevelScope);
+      }
+    } catch (e) {
+      throw e;
+    } finally {
+      try {
+        this.deliverChangeRecords();
+      } catch(e) {
+        throw e;
+      }
+    }
+
+    return this;
+  },
+
   destroy: function() {
     this.emit('destroy');
   }
