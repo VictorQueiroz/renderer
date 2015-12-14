@@ -146,4 +146,19 @@ describe('Scope', function() {
       }).toThrow();
     });
   });
+
+  describe('postDigest()', function() {
+    it('should execute the post digest functions after finish the digest', function() {
+      var postDigestSpy;
+
+      for(var i = 0; i < 10; i++) {
+        postDigestSpy = jasmine.createSpy();
+        scope.postDigest(postDigestSpy);
+
+        scope.apply();
+
+        expect(postDigestSpy).toHaveBeenCalledWith();
+      }
+    });
+  });
 });
