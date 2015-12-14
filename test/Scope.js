@@ -120,4 +120,30 @@ describe('Scope', function() {
       }
     });
   });
+
+  describe('apply()', function() {
+    var listenerSpy;
+
+    beforeEach(function() {
+      listenerSpy = jasmine.createSpy();
+    });
+
+    it('should apply functions and execute a function before deliver changes', function() {
+      scope.watch('property', listenerSpy);
+      scope.apply(function() {
+        expect(scope.phase).toEqual('apply');
+      });
+
+      expect(scope.phase).toEqual(null);
+      expect(listenerSpy).toHaveBeenCalledWith(undefined, undefined);
+    });
+
+    it('should not allow a phase to happen if another phase is happening already', function() {
+      expect(function() {
+        scope.apply(function() {
+          scope.apply();
+        });
+      }).toThrow();
+    });
+  });
 });

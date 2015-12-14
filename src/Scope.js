@@ -7,13 +7,13 @@ function Scope(parent) {
 		this.parentScope = parent;
 	}
 
+  this.childScopes = [];
+  this.topLevelScope = Scope.getTopLevelScope(this);
 	this.childScopes = [];
 }
 
 inherits(Scope, Watcher, {
   watch: function(exp, listener) {
-    var normalWatcher = bind(Watcher.prototype.watch, this);
-
     if(Scope.isComplexExpression(exp)) {
       var finder = Scope.extractExpressions(exp),
       identifiers = finder.identifiers,
@@ -31,12 +31,12 @@ inherits(Scope, Watcher, {
         oldValue = clone(value);
       });
     } else {
-      return normalWatcher(exp, listener);
+      return Watcher.prototype.watch.call(this, exp, listener);
     }
   },
 
   eval: function(exp) {
-    return renderer.parse(exp)(this);
+    return isFunction(exp) ? exp(this) : renderer.parse(exp)(this);
   },
 
 	clone: function(isolate, parent) {
@@ -85,6 +85,30 @@ inherits(Scope, Watcher, {
 		return this;
 	},
 
+  apply: function(fn) {
+    var topLevelScope = this.topLevelScope;
+
+    try {
+      Scope.beginPhase(topLevelScope, 'apply');
+
+      try {
+        return this.eval(fn);
+      } finally {
+        Scope.clearPhase(topLevelScope);
+      }
+    } catch (e) {
+      throw e;
+    } finally {
+      try {
+        this.deliverChangeRecords();
+      } catch(e) {
+        throw e;
+      }
+    }
+
+    return this;
+  },
+
   destroy: function() {
     this.emit('destroy');
   }
@@ -121,6 +145,28 @@ inherits(Scope, Watcher, {
     ChildScope.prototype = parent;
 
     return ChildScope;
+  },
+
+  beginPhase: function(scope, phase) {
+    if(scope.phase) {
+      this.throwError('{0} already in progress', scope.phase);
+    } else {
+      scope.phase = phase;
+    }
+  },
+
+  clearPhase: function(scope) {
+    scope.phase = null;
+  },
+
+  getTopLevelScope: function(scope) {
+    var topLevelScope = scope;
+
+    while(topLevelScope && topLevelScope.parentScope) {
+      topLevelScope = topLevelScope.parentScope;
+    }
+
+    return topLevelScope;
   },
 
   complexTokens: '[]()&!`/*+-='
