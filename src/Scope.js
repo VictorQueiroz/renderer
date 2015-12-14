@@ -12,8 +12,6 @@ function Scope(parent) {
 
 inherits(Scope, Watcher, {
   watch: function(exp, listener) {
-    var normalWatcher = bind(Watcher.prototype.watch, this);
-
     if(Scope.isComplexExpression(exp)) {
       var finder = Scope.extractExpressions(exp),
       identifiers = finder.identifiers,
@@ -31,7 +29,7 @@ inherits(Scope, Watcher, {
         oldValue = clone(value);
       });
     } else {
-      return normalWatcher(exp, listener);
+      return Watcher.prototype.watch.call(this, exp, listener);
     }
   },
 
