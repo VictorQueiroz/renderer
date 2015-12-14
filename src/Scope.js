@@ -7,6 +7,8 @@ function Scope(parent) {
 		this.parentScope = parent;
 	}
 
+  this.childScopes = [];
+  this.topLevelScope = Scope.getTopLevelScope(this);
 	this.childScopes = [];
 }
 
@@ -143,6 +145,28 @@ inherits(Scope, Watcher, {
     ChildScope.prototype = parent;
 
     return ChildScope;
+  },
+
+  beginPhase: function(scope, phase) {
+    if(scope.phase) {
+      this.throwError('{0} already in progress', scope.phase);
+    } else {
+      scope.phase = phase;
+    }
+  },
+
+  clearPhase: function(scope) {
+    scope.phase = null;
+  },
+
+  getTopLevelScope: function(scope) {
+    var topLevelScope = scope;
+
+    while(topLevelScope && topLevelScope.parentScope) {
+      topLevelScope = topLevelScope.parentScope;
+    }
+
+    return topLevelScope;
   },
 
   complexTokens: '[]()&!`/*+-='
