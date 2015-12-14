@@ -701,6 +701,79 @@ describe('Compile', function() {
 
 			expect(spanSpy).toHaveBeenCalledWith(spanCtrl);
 		});
+
+    it('should get a really deep controller', function() {
+      var divCtrl,
+          controllerSpy = jasmine.createSpy();
+
+      node = createNode(
+        '<span></span>' +
+        '<span class="counter-binding">{{counter}}</span>'
+      );
+
+      var span = node.querySelector('span'),
+          tmp;
+
+      for(var i = 0; i < 10; i++) {
+        tmp = document.createElement('span');
+        span.appendChild(tmp);
+        span = tmp;
+      }
+
+      span.setAttribute('counter-increase', '');
+
+      renderer.register('counterIncrease', function() {
+        return {
+          template: '<button id="increase">Plus</button>',
+          require: '?^div',
+          link: function(scope, el, attrs, divCtrl) {
+            controllerSpy(divCtrl);
+
+            var onClickBtn = function() {
+              scope.apply(function() {
+                scope.counter++;
+              });
+            };
+
+            el.querySelector('#increase').addEventListener('click', onClickBtn);
+
+            scope.on('destroy', function() {
+              el.querySelector('#increase').removeEventListener('click', onClickBtn);
+            });
+          }
+        };
+      });
+
+      renderer.register('div', function() {
+        return {
+          controller: function(scope, el, attrs) {
+            divCtrl = this;
+            scope.counter = 0;
+          }
+        }
+      });
+
+      renderer.compile(node)(scope);
+
+      expect(controllerSpy).toHaveBeenCalledWith(divCtrl);
+
+      expect(node.outerHTML).toEqual(
+        '<div><span><span><span><span><span><span><span><span><span><span>' +
+        '<span counter-increase=""><button id="increase">Plus</button></span>' +
+        '</span></span></span></span></span></span></span></span></span>' +
+        '</span><span class="counter-binding">0</span></div>'
+      );
+
+      var increaseBtn = node.querySelector('#increase');
+
+      for(var i = 0; i < 10; i++) {
+        increaseBtn.click();
+
+        expect(node.querySelector('.counter-binding').outerHTML).toEqual(
+          '<span class="counter-binding">' + (i + 1) + '</span>'
+        );
+      }
+    });
 	});
 
 	describe('Transclusion', function() {
