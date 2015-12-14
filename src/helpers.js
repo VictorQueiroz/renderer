@@ -87,6 +87,12 @@ function isEqual(o1, o2) {
   return true;
 }
 
+function sum(array, fn) {
+	return array.reduce(fn || function(previousValue, currentValue) {
+		return (previousValue + currentValue);
+	});
+}
+
 function first(array) {
 	return array[0];
 }
