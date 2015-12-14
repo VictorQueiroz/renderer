@@ -2,6 +2,10 @@ function isAssignable(ast) {
 	return ast.type === AST.Identifier || ast.type === AST.MemberExpression;
 }
 
+function ifDefined(v, d) {
+	return typeof v !== 'undefined' ? v : d;
+}
+
 function ASTCompiler(astBuilder) {
 	this.grammar = new Grammar('fn');
 	this.astBuilder = astBuilder;
@@ -36,7 +40,16 @@ ASTCompiler.prototype = {
 		extra +
 		'return fn;';
 
-		var fn = (new Function('plus', 'isUndefined', fnString))(this.sum, isUndefined);
+		var fn = (new Function(
+			'plus',
+			'isUndefined',
+			'ifDefined',
+			fnString
+		))(
+			this.sum,
+			isUndefined,
+			ifDefined
+		);
 
 		this.clear();
 
@@ -101,6 +114,9 @@ ASTCompiler.prototype = {
 		case AST.LogicalExpression:
 			this.parseLogicalExpression(ast, id, recursion, create);
 			break;
+		case AST.UnaryExpression:
+			this.parseUnaryExpression(ast, id, recursion, create);
+			break;
 		case AST.Identifier:
 			this.parseIdentifier(ast, id, data, recursion, create);
 			break;
@@ -138,6 +154,19 @@ ASTCompiler.prototype = {
 		}
 
 		return id;
+	},
+
+	parseUnaryExpression: function(ast, id, recursion) {
+		var right,
+				expression;
+
+		this.recurse(ast.argument, undefined, undefined, function(expr) {
+			right = expr;
+		});
+
+		expression = ast.operator + '(' + this.grammar.ifDefined(right, 0) + ')';
+		this.grammar.assign(id, expression);
+		recursion(expression);
 	},
 
 	parseThisExpression: function(ast, id, recursion) {
