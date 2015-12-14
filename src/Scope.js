@@ -35,7 +35,7 @@ inherits(Scope, Watcher, {
   },
 
   eval: function(exp) {
-    return isFunction(exp) ? exp(this) : renderer.parse(exp)(this);
+    return isFunction(exp) ? exp(this) : isUndefined(exp) ? exp : renderer.parse(exp)(this);
   },
 
 	clone: function(isolate, parent) {
