@@ -9,7 +9,6 @@ function Scope(parent) {
 
   this.childScopes = [];
   this.topLevelScope = Scope.getTopLevelScope(this);
-	this.childScopes = [];
 }
 
 inherits(Scope, Watcher, {
