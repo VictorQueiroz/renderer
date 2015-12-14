@@ -9,6 +9,7 @@ function Scope(parent) {
 
   this.childScopes = [];
   this.topLevelScope = Scope.getTopLevelScope(this);
+	this.postDigestQueue = [];
 }
 
 inherits(Scope, Watcher, {
@@ -74,12 +75,24 @@ inherits(Scope, Watcher, {
     this.emit(name, fn);
   },
 
+  postDigest: function(fn) {
+    this.postDigestQueue.push(fn);
+  },
+
 	deliverChangeRecords: function() {
     if(this.parentScope) {
       this.parentScope.deliverChangeRecords();
     }
 
     Watcher.prototype.deliverChangeRecords.call(this);
+
+    while(this.postDigestQueue.length) {
+      try {
+        this.postDigestQueue.shift()();
+      } catch(e) {
+        Scope.handleError(e);
+      }
+    }
 
 		return this;
 	},
@@ -134,6 +147,10 @@ inherits(Scope, Watcher, {
     }
 
     return false;
+  },
+
+  handleError: function(e) {
+    throw e;
   },
 
   createChildScopeClass: function(parent) {
