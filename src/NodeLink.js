@@ -153,7 +153,7 @@ NodeLink.prototype = {
 
 			if(directive.template) {
 				if(isArray(directive.template)) {
-					directive.template = directive.template.join('');
+					directive.template = join(directive.template, '');
 				}
 
 				this.node.innerHTML = directive.template;
