@@ -128,45 +128,6 @@ renderer.templateCache = function (path, value) {
 	return null;
 };
 
-function createErrorService (service) {
-	return function(type, raw) {
-		var msg   = '';
-		var args  = toArray(arguments);
-		var vars  = args.slice(2);
-
-		var i, ii = raw.length;
-		var lastCh, ch, addCharacter = true;
-
-		for(i = 0; i < ii; i++) {
-			ch = raw.charCodeAt(i);
-
-			if(ch == 123 || ch == 125) {
-				if(lastCh == 123 && ch != 125) {
-					throw new Error('Expecting } at column ' + i);
-				}
-
-				lastCh = ch;
-			}
-
-			if(ch == 123) {
-				addCharacter = false;
-				msg += vars.shift();
-			}
-
-			if(ch == 125) {
-				addCharacter = true;
-				continue;
-			}
-
-			if(addCharacter) {
-				msg += raw[i];
-			}
-		}
-
-		return new Error(service + ' @ ' + type + ': ' + msg);
-	};
-}
-
 renderer.compile = function(node) {
 	var compile = new Compile(node, directiveRegistry);
 
