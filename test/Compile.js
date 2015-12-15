@@ -665,8 +665,6 @@ describe('Compile', function() {
 			compile.execute(scope);
 
 			expect(spanSpy).toHaveBeenCalledWith(divCtrl);
-
-			renderer.clearRegistry();
 		});
 
 		it('should require same element controllers', function() {
