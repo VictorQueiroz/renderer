@@ -40,4 +40,10 @@ describe('Helpers', function() {
 		})).toBeTruthy();
 		expect(isEqual({ a: 1 }, { b: 1	})).not.toBeTruthy();
 	});
+
+  it('should create custom error message', function() {
+    expect(createError('message {0} message {1}!!!', 1, 2)).toEqual(
+      new Error('message 1 message 2!!!')
+    );
+  });
 });
