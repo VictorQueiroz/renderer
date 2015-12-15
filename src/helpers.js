@@ -409,7 +409,7 @@ function toString(value) {
 }
 
 function lowercase(str) {
-	return String(str).toLowerCase();
+	return (isString(str) ? str : toString(str)).toLowerCase();
 }
 
 function lazy(callback, context) {
