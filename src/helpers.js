@@ -36,6 +36,10 @@ function inherit(parent, extra) {
 	return extend(Object.create(parent), extra);
 }
 
+function join (collection, string) {
+  return Array.prototype.join.call(collection, string);
+}
+
 var EMPTY = '',
     START_SYMBOL = '{',
     END_SYMBOL = '}';
