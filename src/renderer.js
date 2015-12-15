@@ -136,6 +136,14 @@ renderer.compile = function(node) {
 	};
 };
 
+renderer.bootstrap = function(element) {
+  renderer.rootElement = element;
+
+  var rootScope = renderer._rootScope = new renderer.Scope();
+
+  return renderer.compile(element)(scope);
+};
+
 extend(renderer, {
 	Scope: Scope,
 	Compile: Compile,
