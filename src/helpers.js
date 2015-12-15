@@ -36,6 +36,44 @@ function inherit(parent, extra) {
 	return extend(Object.create(parent), extra);
 }
 
+var EMPTY = '',
+    START_SYMBOL = '{',
+    END_SYMBOL = '}';
+
+function createError () {
+  var i,
+      ii,
+      vars = toArray(arguments),
+      text = [],
+      value,
+      message = vars.shift(),
+      addCharacter = 1;
+
+  for(i = 0, ii = message.length; i < ii; i++) {
+    value = message[i];
+
+    if(value == START_SYMBOL) {
+      if(message.substring(i).indexOf(END_SYMBOL) === -1) {
+        throwError('Unclosed bracket at column ' + i);
+      }
+
+      if(addCharacter == 0) {
+        throwError('Expecting ' + END_SYMBOL + ' but go ' + value + ' at column ' + i);
+      }
+
+      addCharacter = 0;
+    } else if (value == END_SYMBOL) {
+      addCharacter = 1;
+    } else if(addCharacter == 1) {
+      text.push(value);
+    } else {
+      text.push(vars.length > 0 ? vars.shift() : EMPTY);
+    }
+  }
+
+  return new Error(text.join(EMPTY));
+}
+
 function isEqual(o1, o2) {
   var v1,
       v2,
