@@ -78,6 +78,10 @@ function createError () {
   return new Error(text.join(EMPTY));
 }
 
+function throwError() {
+  throw createError.apply(this, arguments);
+}
+
 function isEqual(o1, o2) {
   var v1,
       v2,
