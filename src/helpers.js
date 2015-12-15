@@ -399,6 +399,15 @@ function kebabCase(str) {
 	return lowercase(str.replace(/[A-Z]/g, '-$&'));
 }
 
+function toString(value) {
+  // Exit early for strings to avoid a performance hit in some environments.
+  if (typeof value == 'string') {
+    return value;
+  }
+  var result = value == null ? '' : (value + '');
+  return (result == '0' && (1 / value) == -INFINITY) ? '-0' : result;
+}
+
 function lowercase(str) {
 	return String(str).toLowerCase();
 }
