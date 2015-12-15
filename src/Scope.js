@@ -79,6 +79,10 @@ inherits(Scope, Watcher, {
     this.postDigestQueue.push(fn);
   },
 
+  throwError: function() {
+    throw createError.apply(this, arguments);
+  },
+
 	deliverChangeRecords: function() {
     if(this.parentScope) {
       this.parentScope.deliverChangeRecords();
