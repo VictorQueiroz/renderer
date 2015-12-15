@@ -412,6 +412,10 @@ function toString(value) {
   return (result == '0' && (1 / value) == -INFINITY) ? '-0' : result;
 }
 
+function trim (str) {
+  return (isString(str) ? str : toString(str)).trim();
+}
+
 function lowercase(str) {
 	return (isString(str) ? str : toString(str)).toLowerCase();
 }
