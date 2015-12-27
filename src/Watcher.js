@@ -10,16 +10,6 @@ inherits(Watcher, EventEmitter, {
 	},
 
 	watch: function(exp, listener) {
-		var objectPath = exp.split('.');
-
-		objectPath = objectPath.slice(0, -1);
-
-		if(objectPath.length && (objectPath = objectPath.join('.'))) {
-			if(!has(this, objectPath)) {
-				set(this, objectPath, {});
-			}
-		}
-
 		var firstListener = false;
 
 		if(!this.observer.watchers.hasOwnProperty(exp)) {

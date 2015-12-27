@@ -21,7 +21,9 @@ describe('Scope', function() {
       expect(listenerSpy).toHaveBeenCalledWith('someValueHere', undefined);
     });
 
-    it('should deep properties', function() {
+    it('should watch deep properties', function() {
+      set(scope, 'another.deep.property.here', 0);
+
       scope.watch('another.deep.property.here', listenerSpy);
       scope.deliverChangeRecords();
 
