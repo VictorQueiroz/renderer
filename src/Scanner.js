@@ -130,7 +130,8 @@ Scanner.prototype = {
 
 			if(directive.restrict.indexOf(restrict) === -1 ||
 				(isDefined(maxPriority) && !(directive.priority > maxPriority))) {
-				delete this.maxPriority;
+				maxPriority = undefined;
+        delete this.maxPriority;
 				continue;
 			}
 
