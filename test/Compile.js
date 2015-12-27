@@ -779,6 +779,51 @@ describe('Compile', function() {
       renderer.clearRegistry();
     });
 
+    afterEach(function() {
+      renderer.clearRegistry();
+    });
+
+    it('should store the out of context in priority matter directive to compile when transclusion function is executed', function() {
+      node = createNode(
+        '<div>' +
+          '<div view></div>' +
+        '</div>'
+      );
+
+      var lowPriorityCompiled = jasmine.createSpy(),
+          highPriorityCompiled = jasmine.createSpy();
+
+      renderer.register('view', function() {
+        return {
+          restrict: 'A',
+          priority: 400,
+          terminal: true,
+          transclude: 'element',
+          compile: function() {
+            highPriorityCompiled();
+
+            return function(scope, el, attrs, ctrls, transclude) {
+              transclude(scope, noop);
+            };
+          }
+        };
+      });
+      renderer.register('view', function() {
+        return {
+          priority: -400,
+          restrict: 'A',
+          link: function() {
+            lowPriorityCompiled();
+          }
+        };
+      });
+
+      renderer.compile(node)(scope);
+
+      expect(lowPriorityCompiled).toHaveBeenCalled();
+      expect(highPriorityCompiled).toHaveBeenCalled();
+    });
+
 		it('should render content transclude directives', function() {
 			node = document.createElement('span');
 			node.appendChild(createNode(
