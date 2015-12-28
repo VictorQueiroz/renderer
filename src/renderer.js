@@ -141,7 +141,7 @@ renderer.bootstrap = function(element) {
 
   var rootScope = renderer._rootScope = new renderer.Scope();
 
-  return renderer.compile(element)(scope);
+  return renderer.compile(element)(rootScope);
 };
 
 extend(renderer, {

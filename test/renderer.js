@@ -40,4 +40,12 @@ describe('renderer', function() {
 
 		expect(Object.keys(directiveRegistry).length).toBe(1);
 	});
+
+  it('should bootstrap the application in a dom element', function() {
+    var node = document.createElement('div');
+
+    renderer.bootstrap(node);
+
+    expect(renderer._rootScope instanceof Scope === true).toBeTruthy();
+  });
 });
