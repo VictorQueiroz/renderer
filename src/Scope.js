@@ -12,6 +12,21 @@ function Scope(parent) {
 	this.postDigestQueue = [];
 }
 
+/**
+ * Deliver change records to child scopes
+ */
+var digest = function(scope) {
+  scope.deliver();
+
+  for(var i = scope.childScopes.length - 1; i >= 0; i--) {
+    digest(scope.childScopes[i]);
+  }
+};
+
+var deliver = function(scope) {
+  return Watcher.prototype.deliverChangeRecords.call(scope);
+};
+
 inherits(Scope, Watcher, {
   watch: function(exp, listener) {
     if(Scope.isComplexExpression(exp)) {
@@ -77,25 +92,46 @@ inherits(Scope, Watcher, {
 
   postDigest: function(fn) {
     this.postDigestQueue.push(fn);
+
+    return this;
   },
 
   throwError: function() {
     throw createError.apply(this, arguments);
   },
 
+  deliver: function() {
+    try {
+      return deliver(this);
+    } finally {
+      while(this.postDigestQueue.length) {
+        try {
+          this.postDigestQueue.shift()();
+        } catch(e) {
+          Scope.handleError(e);
+        }
+      }
+    }
+  },
+
 	deliverChangeRecords: function() {
-    if(this.parentScope) {
-      this.parentScope.deliverChangeRecords();
+    var parent = this.parentScope;
+
+    // Deliver all the change records to all the
+    // parent scopes.
+    while(parent) {
+      parent.deliver();
+      parent = parent.parentScope;
     }
 
-    Watcher.prototype.deliverChangeRecords.call(this);
+    // Deliver the actual scope change records
+    this.deliver();
 
-    while(this.postDigestQueue.length) {
-      try {
-        this.postDigestQueue.shift()();
-      } catch(e) {
-        Scope.handleError(e);
-      }
+    // Deliver the change records to all the child
+    // scopes
+    var childScopes = this.childScopes;
+    for(var i = childScopes.length - 1; i >= 0; i--) {
+      digest(childScopes[i]);
     }
 
 		return this;

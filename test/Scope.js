@@ -163,4 +163,54 @@ describe('Scope', function() {
       }
     });
   });
+
+  describe('deliverChangeRecords()', function() {
+    var childScope,
+        listenerSpy;
+
+    beforeEach(function() {
+      scope = new Scope(),
+      childScope = scope.clone(),
+      listenerSpy = jasmine.createSpy();
+    });
+
+    it('should deliver changes recursively to all child scopes', function() {
+      childScope.watch('userId', listenerSpy);
+
+      scope.userId = 1;
+      scope.deliverChangeRecords();
+
+      expect(listenerSpy).toHaveBeenCalledWith(1, undefined);
+    });
+
+    it('should deliver changes recursively to all parent scopes', function() {
+      scope.user = {};
+      scope.watch('user.name', listenerSpy);
+
+      childScope.user.name = 'Jasmine Alan';
+      childScope.deliverChangeRecords();
+
+      childScope.user.name = 'John Cena';
+      childScope.deliverChangeRecords();
+
+      expect(listenerSpy).toHaveBeenCalledWith('Jasmine Alan', undefined);
+      expect(listenerSpy).toHaveBeenCalledWith('John Cena', 'Jasmine Alan');
+    });
+
+    it('should execute the post digest queue from child scopes', function() {
+      childScope.postDigest(listenerSpy);
+
+      scope.deliverChangeRecords();
+
+      expect(listenerSpy).toHaveBeenCalled();
+    });
+
+    it('should execute the post digest queue from parent scopes', function() {
+      scope.postDigest(listenerSpy);
+
+      childScope.deliverChangeRecords();
+
+      expect(listenerSpy).toHaveBeenCalled();
+    });
+  });
 });
