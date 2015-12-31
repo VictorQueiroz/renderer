@@ -136,19 +136,106 @@ renderer.compile = function(node) {
 	};
 };
 
-renderer.bootstrap = function(element) {
-  renderer.rootElement = element;
-
-  var rootScope = renderer._rootScope = new renderer.Scope();
-
-  return renderer.compile(element)(rootScope);
-};
+var instances = [],
+    onDestroyQueue = [],
+    beforeCompileQueue = [],
+    afterCompileQueue = [];
 
 extend(renderer, {
-	Scope: Scope,
-	Compile: Compile,
+  Scope: Scope,
+  Compile: Compile,
+  instances: instances,
+  _registry: directiveRegistry,
+  onDestroyQueue: onDestroyQueue,
+  beforeCompileQueue: beforeCompileQueue,
+  afterCompileQueue: afterCompileQueue,
 
-	_registry: directiveRegistry
+  beforeCompile: function(fn) {
+    beforeCompileQueue.unshift(fn);
+
+    return renderer;
+  },
+
+  afterCompile: function(fn) {
+    afterCompileQueue.unshift(fn);
+
+    return renderer;
+  },
+
+  onDestroyRunningApp: function(fn) {
+    onDestroyQueue.unshift(fn);
+
+    return renderer;
+  },
+
+  bootstrap: function(element) {
+    var i,
+        args = [],
+        instance = {},
+        rootElement = element,
+        rootScope = new renderer.Scope(),
+        bootstrapArgs = toArray(arguments);
+
+    args.push(rootScope);
+
+    for(var i = 0; i < bootstrapArgs.length; i++) {
+      args.push(bootstrapArgs[i]);
+    }
+
+    for(i = beforeCompileQueue.length - 1; i >= 0; i--) {
+      beforeCompileQueue[i].apply(instance, args);
+    }
+
+    if(rootElement instanceof Node === true) {
+      instance.clonedElement = rootElement.cloneNode(1);
+    } else if (isObject(rootElement)) {
+      instance.clonedElement = clone(rootElement);
+    }
+
+    var destroyQueue = [];
+
+    extend(instance, {
+      link: renderer.compile(rootElement),
+      rootScope: rootScope,
+      rootElement: rootElement,
+
+      onDestroy: function(fn) {
+        destroyQueue.unshift(fn);
+
+        return instance;
+      },
+
+      destroy: function() {
+        var j;
+
+        for(j = onDestroyQueue.length - 1; j >= 0; j--) {
+          onDestroyQueue[j](instance);
+        }
+
+        for(j = destroyQueue.length - 1; j >= 0; j--) {
+          destroyQueue[j]();
+        }
+      }
+    });
+
+    instance.link(rootScope);
+
+    for(i = afterCompileQueue.length - 1; i >= 0; i--) {
+      afterCompileQueue[i].apply(instance, args);
+    }
+
+    instances.push(instance);
+
+    return instance;
+  }
+});
+
+renderer.onDestroyRunningApp(function(instance) {
+  var i = instances.indexOf(instance);
+
+  if(i > -1) {
+    instances.splice(i, 1);
+  }
 });
 
 global.renderer = renderer;
