@@ -12,14 +12,15 @@ function Interpolate(text, startSymbol, endSymbol) {
 	this.endSymbol = endSymbol || Interpolate.endSymbol;
 	this.startSymbol = startSymbol || Interpolate.startSymbol;
 
+  text = this.text;
+  endSymbol = this.endSymbol;
+  startSymbol = this.startSymbol;
+
 	var exp,
-			text = this.text,
 			index = this.index,
 			concat = [],
 			endIndex,
-			endSymbol = this.endSymbol,
 			startIndex,
-			startSymbol = this.startSymbol,
 			endSymbolLength = endSymbol.length,
 			startSymbolLength = startSymbol.length,
 			expressionPositions = [];

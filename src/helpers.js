@@ -9,7 +9,7 @@ function isUndefined(target) {
 }
 
 function isNull (target) {
-	return target == null && typeof target == 'object';
+	return target === null && typeof target == 'object';
 }
 
 function isBoolean(target) {
@@ -61,7 +61,7 @@ function createError () {
         throwError('Unclosed bracket at column ' + i);
       }
 
-      if(addCharacter == 0) {
+      if(addCharacter === 0) {
         throwError('Expecting ' + END_SYMBOL + ' but go ' + value + ' at column ' + i);
       }
 
@@ -179,11 +179,11 @@ function values (object) {
 	var keys = Object.keys(object);
 	var i,
 			ii = keys.length,
-			values = [];
+			values_ = [];
 	for(i = 0; i < ii; i++) {
-		values[i] = object[keys[i]];
+		values_[i] = object[keys[i]];
 	}
-	return values;
+	return values_;
 }
 
 function some(array, iterator, context) {
@@ -241,11 +241,11 @@ function has (object, path) {
 
 	var i,
 			ii = keys.length,
-			has = false,
+			has_ = false,
 			result = object;
 
 	for(i = 0; i < ii; i++) {
-		has = false;
+		has_ = false;
 
 		if(!result) result = {};
 		if(result.hasOwnProperty(keys[i])) {
@@ -254,10 +254,10 @@ function has (object, path) {
 			break;
 		}
 
-		has = true;
+		has_ = true;
 	}
 
-	return has;
+	return has_;
 }
 
 function noop() {
@@ -399,7 +399,7 @@ function map (array, iterator, context) {
 function camelCase (str) {
 	return (str = str.replace(/[^A-z]/g, ' ')) && lowercase(str).replace(/(?:^\w|[A-Z]|\b\w|\s+)/g, function(match, index) {
 		if (+match === 0) return ""; // or if (/\s+/.test(match)) for white spaces
-		return index == 0 ? match.toLowerCase() : match.toUpperCase();
+		return index === 0 ? match.toLowerCase() : match.toUpperCase();
 	});
 }
 
@@ -412,7 +412,7 @@ function toString(value) {
   if (typeof value == 'string') {
     return value;
   }
-  var result = value == null ? '' : (value + '');
+  var result = value === null ? '' : (value + '');
   return (result == '0' && (1 / value) == -INFINITY) ? '-0' : result;
 }
 
@@ -503,7 +503,7 @@ function elementInheritedData(element, name, value) {
 
 	while (element) {
 		for (var i = 0, ii = names.length; i < ii; i++) {
-			if (value = elementData(element, names[i])) return value;
+			if ((value = elementData(element, names[i]))) return value;
 		}
 
 		// If dealing with a document fragment node with a host element, and no parent, use the host

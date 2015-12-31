@@ -16,7 +16,7 @@ Observer.prototype = {
 		for(i = 0, ii = keys.length; i < ii; i++) {
 			path = keys[i];
 			value = get(this.object, path);
-			watcher = this.watchers[path]
+			watcher = this.watchers[path];
 			oldValue = watcher.oldValue;
 
 			if(isObject(value)) {

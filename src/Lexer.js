@@ -358,7 +358,7 @@ Lexer.prototype = {
 	},
 
 	scanStringLiteral: function() {
-		const start = this.index;
+		var start = this.index;
 		var quote = this.text[start];
 
 		this.assert((quote === '\'' || quote === '"'), 'String literal must starts with a quote');
