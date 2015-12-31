@@ -1,6 +1,7 @@
 var gulp = require('gulp');
 var concat = require('gulp-concat');
 var uglify = require('gulp-uglify');
+var jshint = require('gulp-jshint');
 var wrapper = require('gulp-wrapper');
 
 gulp.task('build', function() {
@@ -21,4 +22,10 @@ gulp.task('build', function() {
 	}))
 	.pipe(uglify())
 	.pipe(gulp.dest('build'));
+});
+
+gulp.task('jshint', function() {
+  gulp.src(['src/**/*.js'])
+  .pipe(jshint())
+  .pipe(jshint.reporter('default'));
 });
