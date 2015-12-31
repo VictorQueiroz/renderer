@@ -47,7 +47,7 @@ NodeGroup.prototype = {
 				context = node;
 			}
 
-			if(response = fn.apply(context, args)) {
+			if((response = fn.apply(context, args))) {
 				result = response;
 			} else {
 				result = null;

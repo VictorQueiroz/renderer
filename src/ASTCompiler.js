@@ -23,7 +23,7 @@ ASTCompiler.prototype = {
 		var extra = '';
 		var assignable;
 
-		if(assignable = this.assignableAST(ast)) {
+		if((assignable = this.assignableAST(ast))) {
 			this.grammar.setCurrent('assign');
 
 			var result = this.nextId();
@@ -40,6 +40,7 @@ ASTCompiler.prototype = {
 		extra +
 		'return fn;';
 
+    /* jshint -W054 */
 		var fn = (new Function(
 			'plus',
 			'isUndefined',
@@ -50,6 +51,7 @@ ASTCompiler.prototype = {
 			isUndefined,
 			ifDefined
 		);
+    /* jshint +W054 */
 
 		this.clear();
 
@@ -150,7 +152,6 @@ ASTCompiler.prototype = {
 			break;
 		default:
 			throw new Error('no statement for ' + ast.type);
-			break;
 		}
 
 		return id;
@@ -191,7 +192,7 @@ ASTCompiler.prototype = {
 	parseTemplateLiteral: function(ast, id, recursion) {
 		var template = [];
 		var expressions = [];
-		var i, expression, id, quasi;
+		var i, expression, quasi;
 
 		for(i = 0; i < ast.expressions.length; i++) {
 			expression = ast.expressions[i];

@@ -106,7 +106,7 @@ renderer.register = function(name, factory) {
 var expsCache = {};
 
 renderer.parse = function(exp, cache) {
-	if(expsCache.hasOwnProperty(exp) && cache != false) {
+	if(expsCache.hasOwnProperty(exp) && cache !== false) {
 		return expsCache[exp];
 	}
 
@@ -178,7 +178,7 @@ extend(renderer, {
 
     args.push(rootScope);
 
-    for(var i = 0; i < bootstrapArgs.length; i++) {
+    for(i = 0; i < bootstrapArgs.length; i++) {
       args.push(bootstrapArgs[i]);
     }
 

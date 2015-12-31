@@ -157,7 +157,6 @@ ASTFinder.prototype = {
 			break;
 		default:
 			throw new Error('there is no statement for ' + ast.type);
-			break;
 		}
 	}
 };

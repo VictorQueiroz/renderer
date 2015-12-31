@@ -5,7 +5,7 @@
 function Scanner(node, registry, maxPriority) {
 	this.node = node;
 	this.registry = registry;
-	this.attributes = new Attributes(this.node),
+	this.attributes = new Attributes(this.node);
 	this.directives = [];
 	this.maxPriority = maxPriority;
 }
@@ -129,7 +129,7 @@ Scanner.prototype = {
 			directive = directives[i];
 
 			if(directive.restrict.indexOf(restrict) === -1 ||
-				(isDefined(maxPriority) && !(directive.priority > maxPriority))) {
+				(isDefined(maxPriority) && (directive.priority > maxPriority === false))) {
 				maxPriority = undefined;
         delete this.maxPriority;
 				continue;
