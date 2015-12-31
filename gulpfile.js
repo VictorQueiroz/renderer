@@ -20,6 +20,14 @@ gulp.task('build', function() {
 		header: '(function(global) { "use strict"; ',
 		footer: '}(window));'
 	}))
+  .pipe(uglify({
+    mangle: false,
+    output: {
+      beautify: 1
+    }
+  }))
+  .pipe(gulp.dest('build'))
+  .pipe(concat('renderer.min.js'))
 	.pipe(uglify())
 	.pipe(gulp.dest('build'));
 });
