@@ -41,6 +41,30 @@ describe('Helpers', function() {
 		expect(isEqual({ a: 1 }, { b: 1	})).not.toBeTruthy();
 	});
 
+  it('should clone a deep array', function() {
+    expect(clone([[[[]]]])).toEqual([[[[]]]]);
+  });
+
+  it('should clone an object', function() {
+    var object = {
+      huge: {
+        object: {
+          lots: {
+            of: {
+              recursive: {
+                keys: [1,2,3,4]
+              }
+            }
+          }
+        }
+      }
+    };
+
+    expect(object).toBe(object);
+    expect(clone(object)).toEqual(object);
+    expect(clone(object)).not.toBe(object);
+  });
+
   it('should create custom error message', function() {
     expect(createError('message {0} message {1}!!!', 1, 2)).toEqual(
       new Error('message 1 message 2!!!')
