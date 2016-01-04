@@ -29,6 +29,8 @@ var deliver = function(scope) {
 
 inherits(Scope, Watcher, {
   watch: function(exp, listener) {
+    var scope = this;
+
     if(Scope.isComplexExpression(exp)) {
       var finder = Scope.extractExpressions(exp),
       identifiers = finder.identifiers,
@@ -39,7 +41,7 @@ inherits(Scope, Watcher, {
       var oldValue;
 
       return this.watchGroup(exps.concat(identifiers), function() {
-        var value = this.eval(exp);
+        var value = scope.eval(exp);
 
         listener(value, oldValue);
 
