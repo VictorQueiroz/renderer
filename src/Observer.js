@@ -1,64 +1,44 @@
 function Observer(object) {
 	this.object = object;
-	this.watchers = {};
+	this.watchers = [];
 }
 
 Observer.prototype = {
 	deliverChangeRecords: function() {
-		var i,
-				ii,
-				path,
-				keys = Object.keys(this.watchers),
-				value,
-				watcher,
-				oldValue;
+    var last,
+        value,
+        object = this.object,
+        length,
+        watcher,
+        watchers = this.watchers;
 
-		for(i = 0, ii = keys.length; i < ii; i++) {
-			path = keys[i];
-			value = get(this.object, path);
-			watcher = this.watchers[path];
-			oldValue = watcher.oldValue;
+    length = watchers.length;
 
-			if(isObject(value)) {
-				if(!isEqual(value, oldValue)) {
-					this.fire(path);
-				}
-			} else if (value != oldValue) {
-				this.fire(path);
-			}
+		while(length--) {
+      watcher = watchers[length];
 
-			watcher.oldValue = clone(value);
-		}
+      if((value = watcher.get(object)) !== (last = watcher.last) && !isEqual(value, last)) {
+        watcher.last = clone(value);
+        watcher.fn(value, last);
+      }
+    }
 	},
 
 	watch: function(path, listener) {
-		var watcher,
-				listeners;
+		var object = this.object,
+        watcher = {
+          last: undefined,
+          path: path,
+          get: function(object) {
+            return get(object, path);
+          },
+          fn: listener
+        };
 
-		if(!this.watchers.hasOwnProperty(path)) {
-			this.watchers[path] = watcher = {
-				path: path,
-				oldValue: undefined,
-				listeners: []
-			};
-		} else {
-			watcher = this.watchers[path];
-		}
+    var value = watcher.get();
+    watcher.fn(value, clone(watcher.last));
+    watcher.last = clone(value);
 
-		listeners = watcher.listeners;
-		listeners.push(listener);
-	},
-
-	fire: function(path) {
-		var i,
-				ii,
-				watcher = this.watchers[path],
-				listeners = watcher.listeners;
-
-		for(i = 0, ii = listeners.length; i < ii; i++) {
-			listeners[i](get(this.object, watcher.path), watcher.oldValue);
-		}
-
-		return this;
+    this.watchers.unshift(watcher);
 	}
 };
