@@ -336,6 +336,7 @@ describe('Compile', function() {
 			renderer.compile(node)(scope);
 
 			expect(links).toEqual(1);
+
 			expect(node.querySelector('change-color-directive').getAttribute('style')).toBe('background-color: rgb(255, 255, 255); ');
 		});
 	});
@@ -361,9 +362,10 @@ describe('Compile', function() {
 						var method;
 
 						scope.watch(attrs.rdShow, function(value) {
-							method = value ? 'remove' : 'add';
-
-							el.classList[method]('hide');
+              if(isDefined(value)) {
+  							method = value ? 'remove' : 'add';
+  							el.classList[method]('hide');
+              }
 
 							scope.counter++;
 						});
@@ -389,8 +391,6 @@ describe('Compile', function() {
 				'<span>2</span></div><div rd-show-end="" ' +
 				'class="hide"></div></div>'
 			);
-
-			renderer.clearRegistry();
 		});
 	});
 
