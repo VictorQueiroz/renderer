@@ -41,7 +41,7 @@ inherits(Scope, Watcher, {
       return this.watchGroup(exps.concat(identifiers), function() {
         var value = this.eval(exp);
 
-        listener.call(this, value, oldValue);
+        listener(value, oldValue);
 
         oldValue = clone(value);
       });
