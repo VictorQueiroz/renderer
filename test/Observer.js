@@ -41,6 +41,26 @@ describe('Observer', function() {
 
 			expect(listenerSpy).toHaveBeenCalledWith(1, 0);
 		});
+
+    it('should detect changes on objects', function(){
+      var array = [];
+      observer.watch('objectHere', listenerSpy);
+
+      object.objectHere = {};
+      observer.deliverChangeRecords();
+
+      expect(listenerSpy).toHaveBeenCalledWith({}, undefined);
+
+      object.objectHere.array = array;
+      observer.deliverChangeRecords();
+
+      expect(listenerSpy).toHaveBeenCalledWith({array:[]}, {});
+
+      array.push(0);
+      observer.deliverChangeRecords();
+
+      expect(listenerSpy).toHaveBeenCalledWith({array:[0]}, {array:[]});
+    });
 	});
 
 	describe('deliverChangeRecords()', function() {
