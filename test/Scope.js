@@ -60,6 +60,14 @@ describe('Scope', function() {
       scope.deliverChangeRecords();
 
       expect(listenerSpy).toHaveBeenCalledWith('Second user', 'First user');
+      scope.index = 0;
+      scope.deliverChangeRecords();
+
+      scope.apply(function() {
+        scope.users.unshift('Before first user');
+      });
+
+      expect(listenerSpy).toHaveBeenCalledWith('Before first user', 'First user');
     });
   });
 
