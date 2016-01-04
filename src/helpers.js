@@ -143,7 +143,7 @@ function first(array) {
 	return array[0];
 }
 
-function copy (destination, source, stack) {
+function copy (destination, source) {
 	if(isObject(source)) {
 		var keys = Object.keys(source);
 		var i,
@@ -151,16 +151,12 @@ function copy (destination, source, stack) {
 				key,
 				value;
 
-		stack = stack || [];
-
 		for(i = 0; i < ii; i++) {
 			key 		= keys[i];
 			value 	= source[key];
 
-			stack.push(value);
-
-			if(isObject(value) && stack.indexOf(value) === -1) {
-				value = copy(isArray(value) ? [] : {}, value, stack);
+			if(isObject(value)) {
+				value = copy(isArray(value) ? [] : {}, value);
 			}
 
 			destination[key] = value;
