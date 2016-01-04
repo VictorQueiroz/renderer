@@ -104,13 +104,15 @@ function isEqual(o1, o2) {
     if(o1.length != o2.length || o1 != o2) {
       return false;
     }
+  } else if (isBoolean(o1)) {
+    if(o1 !== o2) {
+      return false;
+    }
   } else if(isArray(o1)) {
     // Check for difference lengths between arrays
     if(o1.length != o2.length) return false;
 
-    length = o1.length;
-
-    while(length--) {
+    for(length = o1.length - 1; length >= 0; length--) {
       if(isEqual(o1[length], o2[length])) {
         continue;
       }
@@ -119,9 +121,12 @@ function isEqual(o1, o2) {
     }
   } else if (isObject(o1)) {
     keys = Object.keys(o1);
-    length = keys.length;
 
-    while(length--) {
+    if(!isEqual(keys, Object.keys(o2))) {
+      return false;
+    }
+
+    for(length = keys.length - 1; length >= 0; length--) {
       if(isEqual(o1[keys[length]], o2[keys[length]])) {
         continue;
       }
@@ -164,6 +169,7 @@ function copy (destination, source) {
 
 		return destination;
 	}
+
 	return source;
 }
 
@@ -173,12 +179,14 @@ function clone (object) {
 
 function values (object) {
 	var keys = Object.keys(object);
+
 	var i,
 			ii = keys.length,
 			values_ = [];
 	for(i = 0; i < ii; i++) {
 		values_[i] = object[keys[i]];
 	}
+
 	return values_;
 }
 
