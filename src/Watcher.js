@@ -9,18 +9,8 @@ inherits(Watcher, EventEmitter, {
 		this.observer.deliverChangeRecords();
 	},
 
-	watch: function(exp, listener) {
-		var firstListener = false;
-
-		if(!this.observer.watchers.hasOwnProperty(exp)) {
-			firstListener = true;
-		}
-
-		this.observer.watch(exp, bind(listener, this));
-
-		if(firstListener) {
-			this.observer.fire(exp);
-		}
+	watch: function(path, listener) {
+		this.observer.watch(path, listener);
 	},
 
 	watchGroup: function(exps, listener) {
