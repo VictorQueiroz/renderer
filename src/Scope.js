@@ -33,12 +33,11 @@ inherits(Scope, Watcher, {
 
     if(Scope.isComplexExpression(exp)) {
       var finder = Scope.extractExpressions(exp),
-      identifiers = finder.identifiers,
-      exps = finder.allExps.map(function(exp) {
-        return exp.join('.');
-      });
-
-      var oldValue;
+          identifiers = finder.identifiers,
+          exps = finder.allExps.map(function(exp) {
+            return exp.join('.');
+          }),
+          oldValue;
 
       return this.watchGroup(exps.concat(identifiers), function() {
         var value = scope.eval(exp);
@@ -47,9 +46,9 @@ inherits(Scope, Watcher, {
 
         oldValue = clone(value);
       });
-    } else {
-      return Watcher.prototype.watch.call(this, exp, listener);
     }
+
+    return Watcher.prototype.watch.call(this, exp, listener);
   },
 
   eval: function(exp) {

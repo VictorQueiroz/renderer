@@ -60,6 +60,7 @@ describe('Scope', function() {
       scope.deliverChangeRecords();
 
       expect(listenerSpy).toHaveBeenCalledWith('Second user', 'First user');
+
       scope.index = 0;
       scope.deliverChangeRecords();
 

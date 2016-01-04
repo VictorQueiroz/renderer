@@ -37,10 +37,15 @@
             if (o1 != o2) return !1;
         } else if (isString(o1)) {
             if (o1.length != o2.length || o1 != o2) return !1;
+        } else if (isBoolean(o1)) {
+            if (o1 !== o2) return !1;
         } else if (isArray(o1)) {
             if (o1.length != o2.length) return !1;
-            for (length = o1.length; length--; ) if (!isEqual(o1[length], o2[length])) return !1;
-        } else if (isObject(o1)) for (keys = Object.keys(o1), length = keys.length; length--; ) if (!isEqual(o1[keys[length]], o2[keys[length]])) return !1;
+            for (length = o1.length - 1; length >= 0; length--) if (!isEqual(o1[length], o2[length])) return !1;
+        } else if (isObject(o1)) {
+            if (keys = Object.keys(o1), !isEqual(keys, Object.keys(o2))) return !1;
+            for (length = keys.length - 1; length >= 0; length--) if (!isEqual(o1[keys[length]], o2[keys[length]])) return !1;
+        }
         return !0;
     }
     function sum(array, fn) {
@@ -51,11 +56,10 @@
     function first(array) {
         return array[0];
     }
-    function copy(destination, source, stack) {
+    function copy(destination, source) {
         if (isObject(source)) {
             var i, key, value, keys = Object.keys(source), ii = keys.length;
-            for (stack = stack || [], i = 0; ii > i; i++) key = keys[i], value = source[key], 
-            stack.push(value), isObject(value) && -1 === stack.indexOf(value) && (value = copy(isArray(value) ? [] : {}, value, stack)), 
+            for (i = 0; ii > i; i++) key = keys[i], value = source[key], isObject(value) && (value = copy(isArray(value) ? [] : {}, value)), 
             destination[key] = value;
             return destination;
         }
@@ -285,7 +289,7 @@
         });
     }
     function Observer(object) {
-        this.object = object, this.watchers = {};
+        this.object = object, this.watchers = [];
     }
     function Parser(lexer) {
         this.lexer = lexer, this.ast = new AST(this.lexer), this.astCompiler = new ASTCompiler(this.ast);
@@ -420,10 +424,8 @@
         deliverChangeRecords: function() {
             this.observer.deliverChangeRecords();
         },
-        watch: function(exp, listener) {
-            var firstListener = !1;
-            this.observer.watchers.hasOwnProperty(exp) || (firstListener = !0), this.observer.watch(exp, bind(listener, this)), 
-            firstListener && this.observer.fire(exp);
+        watch: function(path, listener) {
+            this.observer.watch(path, listener);
         },
         watchGroup: function(exps, listener) {
             var watcher = this;
@@ -440,13 +442,14 @@
     };
     inherits(Scope, Watcher, {
         watch: function(exp, listener) {
+            var scope = this;
             if (Scope.isComplexExpression(exp)) {
                 var oldValue, finder = Scope.extractExpressions(exp), identifiers = finder.identifiers, exps = finder.allExps.map(function(exp) {
                     return exp.join(".");
                 });
                 return this.watchGroup(exps.concat(identifiers), function() {
-                    var value = this.eval(exp);
-                    listener.call(this, value, oldValue), oldValue = clone(value);
+                    var value = scope.eval(exp);
+                    listener(value, oldValue), oldValue = clone(value);
                 });
             }
             return Watcher.prototype.watch.call(this, exp, listener);
@@ -1742,23 +1745,20 @@
         }
     }, Observer.prototype = {
         deliverChangeRecords: function() {
-            var i, ii, path, value, watcher, oldValue, keys = Object.keys(this.watchers);
-            for (i = 0, ii = keys.length; ii > i; i++) path = keys[i], value = get(this.object, path), 
-            watcher = this.watchers[path], oldValue = watcher.oldValue, isObject(value) ? isEqual(value, oldValue) || this.fire(path) : value != oldValue && this.fire(path), 
-            watcher.oldValue = clone(value);
+            var last, value, length, watcher, object = this.object, watchers = this.watchers;
+            for (length = watchers.length; length--; ) watcher = watchers[length], (value = watcher.get(object)) === (last = watcher.last) || isEqual(value, last) || (watcher.last = clone(value), 
+            watcher.fn(value, last));
         },
         watch: function(path, listener) {
-            var watcher, listeners;
-            this.watchers.hasOwnProperty(path) ? watcher = this.watchers[path] : this.watchers[path] = watcher = {
+            var watcher = (this.object, {
+                last: void 0,
                 path: path,
-                oldValue: void 0,
-                listeners: []
-            }, listeners = watcher.listeners, listeners.push(listener);
-        },
-        fire: function(path) {
-            var i, ii, watcher = this.watchers[path], listeners = watcher.listeners;
-            for (i = 0, ii = listeners.length; ii > i; i++) listeners[i](get(this.object, watcher.path), watcher.oldValue);
-            return this;
+                get: function(object) {
+                    return get(object, path);
+                },
+                fn: listener
+            }), value = watcher.get();
+            watcher.fn(value, clone(watcher.last)), watcher.last = clone(value), this.watchers.unshift(watcher);
         }
     }, Parser.prototype = {
         constructor: Parser,
