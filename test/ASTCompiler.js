@@ -64,6 +64,40 @@ describe('ASTCompiler', function() {
 		});
 	});
 
+  describe('CallExpression', function() {
+    var locals;
+
+    beforeEach(function() {
+      locals = {};
+    });
+
+    it('should execute expressions with literal arguments', function() {
+      locals.fn = function(arg1) {
+        return arg1;
+      };
+
+      var exp = astCompiler.compile('fn("some value " + (1 | 2) + " here")');
+
+      expect(exp(locals)).toEqual(
+        'some value 3 here'
+      );
+    });
+
+    it('should parse functions call with arguments', function() {
+      var array = [];
+
+      locals.array = array;
+
+      locals.arg1 = 0;
+      locals.arg2 = 1;
+
+      var exp = astCompiler.compile('array.push(arg1, arg2, 2)');
+
+      expect(exp(locals)).toBe(3);
+      expect(array).toEqual([0,1,2]);
+    });
+  });
+
 	describe('Bitwise operators', function() {
 		var flags;
 

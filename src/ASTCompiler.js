@@ -248,24 +248,26 @@ ASTCompiler.prototype = {
 	},
 
 	parseCallExpression: function(ast, id, recursion) {
-		var self = this;
-		var right, left, expression;
-		var args = [];
-		var grammar = this.grammar;
+		var self = this,
+        right,
+        left,
+        expression,
+        args = [],
+        grammar = this.grammar;
 
 		right = this.nextId();
 		left = ast.callee;
 
-		this.recurse(ast.callee, right, undefined, function() {
+		this.recurse(ast.callee, right, left, function() {
 			grammar.ifNotNull(right, function() {
 				forEach(ast.arguments, function(expr) {
-					self.recurse(expr, self.nextId(), function(argument) {
-						args.push(argument);
+					self.recurse(expr, self.nextId(), undefined, function(arg) {
+						args.push(arg);
 					});
 				});
 
 				if(left.name) {
-					expression = this.member('s', left.name, left.computed) + this.block(args.join(','));
+					expression = this.member(left.context, left.name, left.computed) + this.block(args.join(','));
 				} else {
 					expression = this.execute(right, args);
 				}
@@ -274,6 +276,7 @@ ASTCompiler.prototype = {
 			}, function() {
 				this.assign(id, 'undefined');
 			});
+
 			recursion(id);
 		});
 	},
