@@ -103,37 +103,32 @@ renderer.register = function(name, factory) {
 	return registerDirective(name, factory, directiveRegistry);
 };
 
-var expsCache = {};
+var expsCache = {},
+    _templateCache = {};
 
-renderer.parse = function(exp, cache) {
-	if(expsCache.hasOwnProperty(exp) && cache !== false) {
-		return expsCache[exp];
-	}
+function parse (exp, cache) {
+  if(expsCache.hasOwnProperty(exp) && cache !== false) {
+    return expsCache[exp];
+  }
 
-	var parser = new Parser(new Lexer());
+  var parser = new Parser(new Lexer());
 
-	return (expsCache[exp] = parser.parse(exp));
-};
+  return (expsCache[exp] = parser.parse(exp));
+}
 
-var templateCache = {};
+function templateCache (path, value) {
+  if(isString(path)) {
+    if(!value) {
+      return _templateCache[path];
+    }
 
-renderer.templateCache = function (path, value) {
-	if(isString(path)) {
-		if(!value) {
-			return templateCache[path];
-		}
+    _templateCache[path] = value;
+  }
+  return null;
+}
 
-		templateCache[path] = value;
-	}
-	return null;
-};
-
-renderer.compile = function(node) {
-	var compile = new Compile(node, directiveRegistry);
-
-	return function(scope) {
-		return compile.execute(scope);
-	};
+renderer.compile = function(node, transcludeFn, maxPriority, previousCompileContext) {
+  return compile(node, transcludeFn, maxPriority, previousCompileContext);
 };
 
 var instances = [],
@@ -142,12 +137,20 @@ var instances = [],
     afterCompileQueue = [];
 
 extend(renderer, {
+  templateCache: templateCache,
+
+  parse: parse,
+
   Scope: Scope,
-  Compile: Compile,
+
   instances: instances,
+
   _registry: directiveRegistry,
+
   onDestroyQueue: onDestroyQueue,
+
   beforeCompileQueue: beforeCompileQueue,
+
   afterCompileQueue: afterCompileQueue,
 
   beforeCompile: function(fn) {
@@ -196,7 +199,9 @@ extend(renderer, {
 
     extend(instance, {
       link: renderer.compile(rootElement),
+
       rootScope: rootScope,
+
       rootElement: rootElement,
 
       onDestroy: function(fn) {
