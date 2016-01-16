@@ -62,8 +62,9 @@ function apply(directives, node, attributes) {
   /**
    *  - Executes the pre and post linking functions
    */
-  return function nodeLinkFn (scope, childLinkFn) {
-    var i;
+  return function nodeLinkFn (scope, node, childLinkFn) {
+    var i,
+        linkFn;
 
     for(i = 0; i < preLinkFns.length; i++) {
       linkFn = preLinkFns[i];
@@ -206,7 +207,7 @@ function compileNodes(nodeList) {
       childLinkFn = linkFns[i++];
 
       if(nodeLinkFn) {
-        nodeLinkFn(scope, childLinkFn);
+        nodeLinkFn(scope, node, childLinkFn);
       } else if (childLinkFn) {
         childLinkFn(scope, node.childNodes);
       }

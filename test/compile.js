@@ -218,7 +218,7 @@ describe('compile()', function() {
         scan(node, directives);
 
         nodeLinkFn = apply(directives, node, attributes);
-        nodeLinkFn(scope);
+        nodeLinkFn(scope, node);
 
         expect(postLinkSpy).toHaveBeenCalledWith(scope, node, attributes);
       });
@@ -227,7 +227,7 @@ describe('compile()', function() {
         scan(node, directives);
 
         nodeLinkFn = apply(directives, node, attributes);
-        nodeLinkFn(scope, childLinkFn);
+        nodeLinkFn(scope, node, childLinkFn);
 
         expect(childLinkFn).toHaveBeenCalled();
       });
