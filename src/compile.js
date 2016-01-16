@@ -31,7 +31,8 @@ function apply(directives, node, attributes) {
   var i,
       ii,
       linkFn,
-      directive;
+      directive,
+      terminalPriority = -Number.MAX_VALUE;
 
   // pre/post links
   var preLinkFns = [],
@@ -40,12 +41,20 @@ function apply(directives, node, attributes) {
   for(i = 0, ii = directives.length; i < ii; i++) {
     directive = directives[i];
 
+    if(terminalPriority > directive.priority) {
+      break; // prevent further processing of directives
+    }
     linkFn = directive.compile(node, attributes);
 
     if(isFunction(linkFn)) {
       addLinkFn(0, linkFn);
     } else if(isObject(linkFn)) {
       addLinkFn(linkFn.pre, linkFn.post);
+    }
+
+    if(directive.terminal) {
+      nodeLinkFn.terminal = true;
+      terminalPriority = Math.max(terminalPriority, directive.priority); // make sure to always get the bigger priority
     }
   }
 
@@ -59,10 +68,12 @@ function apply(directives, node, attributes) {
     }
   }
 
+  return nodeLinkFn;
+
   /**
    *  - Executes the pre and post linking functions
    */
-  return function nodeLinkFn (scope, node, childLinkFn) {
+  function nodeLinkFn (scope, node, childLinkFn, options) {
     var i,
         linkFn;
 
@@ -94,14 +105,19 @@ function invokeLinkFn(linkFn, scope, node, attributes) {
   linkFn(scope, node, attributes);
 }
 
-function addDirective(name, directives) {
+function addDirective(name, directives, maxPriority) {
   var i,
       ii,
-      instances;
+      instances,
+      directive;
 
   if((instances = registry.$$get(name))) {
     for(i = 0, ii = instances.length; i < ii; i++) {
-      directives.push(instances[i]);
+      directive = instances[i];
+
+      if((isUndefined(maxPriority) || maxPriority > directive.priority)) {
+        directives.push(directive);
+      }
     }
   }
 }
@@ -116,14 +132,14 @@ function byPriority(a, b) {
   return a.index - b.index;
 }
 
-function scan(node, directives, attributes) {
+function scan(node, directives, attributes, maxPriority) {
   var i,
       ii,
       name = camelCase(node.tagName),
       attr,
       attrs = node.attributes;
 
-  addDirective(name, directives);
+  addDirective(name, directives, maxPriority);
 
   for(i = 0, ii = attrs.length; i < ii; i++) {
     attr = attrs[i];

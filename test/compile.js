@@ -83,6 +83,32 @@ describe('compile()', function() {
         expect(directives[j++].priority).toBe(i);
       }
     });
+
+    it('should get directives bellow the maximum priority allowed if one is defined', function() {
+      var normalLinkSpy = jasmine.createSpy('normal'),
+          priorityLinkSpy = jasmine.createSpy('priority');
+
+      register('myComponent', function() {
+        return {
+          link: priorityLinkSpy
+        };
+      });
+
+      register('myComponent', function() {
+        return {
+          link: normalLinkSpy,
+          priority: 100
+        };
+      });
+
+      scan(node, directives, attributes, 100);
+
+      expect(directives.length).toBe(1);
+
+      directives[0].link();
+      expect(priorityLinkSpy).toHaveBeenCalled();
+      expect(normalLinkSpy).not.toHaveBeenCalled();
+    });
   });
 
   describe('compileNodes()' ,function() {
@@ -166,10 +192,12 @@ describe('compile()', function() {
 
   describe('apply()', function() {
     var node,
+        scope,
         directives,
         attributes;
 
     beforeEach(function() {
+      scope = new Scope(),
       directives = [],
       attributes = new Attributes();
     });
@@ -185,6 +213,24 @@ describe('compile()', function() {
       apply(directives, node, attributes);
 
       expect(compileSpy).toHaveBeenCalledWith(node, attributes);
+    });
+
+    it('should not compile directives with priority bellow terminal priority defined by a "terminal" directive', function() {
+      node = createNode('<div><special-directive></special-directive></div>');
+
+      var specialDirectiveSpy = jasmine.createSpy('specialDirective'),
+          terminalCompileSpy = jasmine.createSpy('divTerminal'),
+          compileSpy = jasmine.createSpy('normalCompile');
+
+      register('specialDirective', function() { return {compile: specialDirectiveSpy} });
+      register('div', function() { return {priority: 1000, terminal: true, compile: terminalCompileSpy}; });
+      register('div', function() { return {priority: 999, compile: compileSpy}; });
+
+      compileNodes(node.childNodes)(scope, node.childNodes);
+
+      expect(compileSpy).not.toHaveBeenCalled();
+      expect(terminalCompileSpy).toHaveBeenCalled();
+      expect(specialDirectiveSpy).not.toHaveBeenCalled();
     });
 
     describe('nodeLinkFn()', function() {
