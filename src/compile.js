@@ -66,7 +66,8 @@ function apply(directives, node, attributes) {
     var i;
 
     for(i = 0; i < preLinkFns.length; i++) {
-      invokeLinkFn(preLinkFns[i],
+      linkFn = preLinkFns[i];
+      invokeLinkFn(linkFn,
         scope,
         node,
         attributes
@@ -78,7 +79,8 @@ function apply(directives, node, attributes) {
     }
 
     for(i = postLinkFns.length - 1; i >= 0; i--) {
-      invokeLinkFn(postLinkFns[i],
+      linkFn = postLinkFns[i];
+      invokeLinkFn(linkFn,
         scope,
         node,
         attributes
