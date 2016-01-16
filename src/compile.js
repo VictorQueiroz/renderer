@@ -105,6 +105,16 @@ function addDirective(name, directives) {
   }
 }
 
+/**
+ * Sorting function for bound directives.
+ */
+function byPriority(a, b) {
+  var diff = b.priority - a.priority;
+  if (diff !== 0) return diff;
+  if (a.name !== b.name) return (a.name < b.name) ? -1 : 1;
+  return a.index - b.index;
+}
+
 function scan(node, directives, attributes) {
   var i,
       ii,
@@ -120,6 +130,8 @@ function scan(node, directives, attributes) {
 
     attributes[name] = attr.value;
   }
+
+  directives.sort(byPriority);
 }
 
 function compileNodes(nodeList) {

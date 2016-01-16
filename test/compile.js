@@ -35,16 +35,17 @@ describe('compile()', function() {
   });
 
   describe('scan()', function() {
-    var directives,
+    var node,
+        directives,
         attributes;
 
     beforeEach(function() {
+      node = document.createElement('my-component'),
       directives = [],
       attributes = new Attributes();
     });
 
     it('should match directives by the tag name', function() {
-      node = document.createElement('my-component');
       for(var i = 0; i < 10; i++) {
         register('myComponent', noop_directive(i));
       }
@@ -58,12 +59,29 @@ describe('compile()', function() {
     });
 
     it('should store the node attributes in the "attributes" argument', function() {
-      node = document.createElement('my-component');
       node.setAttribute('component-data', '{ users: appCtrl.users }');
 
       scan(node, directives, attributes);
 
       expect(attributes.componentData).toBe('{ users: appCtrl.users }');
+    });
+
+    it('should sort directives by priority', function() {
+      var $register = function(priority) {
+        register('myComponent', function() {
+          return {priority: priority, compile: noop};
+        });
+      };
+
+      for(var i = 0; i < 10; i++) {
+        $register(i);
+      }
+
+      scan(node, directives, attributes);
+
+      for(var i = directives.length - 1, j = 0; i >= 0; i--) {
+        expect(directives[j++].priority).toBe(i);
+      }
     });
   });
 
