@@ -46,6 +46,48 @@ describe('compile()', function() {
     }
   });
 
+  it('should compile only the directives with priority bellow "maxPriority"', function() {
+    var scope = new Scope(),
+        divSpy = jasmine.createSpy(),
+        spyDirective1 = jasmine.createSpy(),
+        spyDirective2 = jasmine.createSpy();
+
+    node = createNode('<div do-not-compile-1 do-not-compile-2></div>');
+
+    register('doNotCompile1', function() {
+      return {
+        compile: function() {
+          return spyDirective1;
+        },
+        priority: 100
+      };
+    });
+
+    register('doNotCompile2', function() {
+      return {
+        compile: function() {
+          return spyDirective2;
+        },
+        priority: 100
+      };
+    });
+
+    register('div', function() {
+      return {
+        compile: function() {
+          return divSpy;
+        },
+        priority: 99
+      };
+    });
+
+    compile(node, undefined, 100)(scope);
+
+    expect(divSpy).toHaveBeenCalled();
+    expect(spyDirective1).not.toHaveBeenCalled();
+    expect(spyDirective2).not.toHaveBeenCalled();
+  });
+
   describe('type', function() {
     var node,
         scope = new Scope(),
@@ -346,7 +388,65 @@ describe('compile()', function() {
         compile(node)(scope);
 
         expect(postLinkSpy).toHaveBeenCalled();
-        expect(node.innerHTML).toEqual('<!-- repeat -->');
+        expect(node.innerHTML).toEqual('<!-- repeat: undefined -->');
+      });
+
+      it('should only compile other directives when transcludeFn() function gets executed', function() {
+        node = createNode(
+          '<div nd-class="some-class-here" repeat>',
+            '<div repeat length="4"></div>',
+          '</div>'
+        );
+
+        register('repeat', function() {
+          return {
+            transclude: 'element',
+            priority: 1000,
+            terminal: true,
+            type: 'A',
+            link: function(scope, element, attrs, ctrl, transclude) {
+              var j = 0,
+                  length = parseInt(attrs.length || 1);
+
+              for(var i = 0; i < length; i++) {
+                transclude(function(clones) {
+                  var fragment = document.createDocumentFragment();
+
+                  for(var i = 0; i < clones.length; i++) {
+                    if(clones[i].nodeType == Node.ELEMENT_NODE) {
+                      clones[i].setAttribute('length', j++);
+                    }
+
+                    fragment.appendChild(clones[i]);
+                  }
+
+                  element.parentNode.insertBefore(fragment, element.nextSibling);
+                });
+              }
+            }
+          };
+        });
+
+        register('ndClass', function() {
+          return {
+            link: function(scope, element, attrs) {
+              element.classList.add(attrs.ndClass);
+            }
+          };
+        });
+
+        compile(node)(scope);
+
+        expect(node.innerHTML).toEqual(dom(
+          '<!-- repeat:  -->',
+          '<div nd-class="some-class-here" repeat="" length="0" class="some-class-here">',
+            '<!-- repeat:  -->',
+            '<div repeat="" length="3"></div>',
+            '<div repeat="" length="2"></div>',
+            '<div repeat="" length="1"></div>',
+            '<div repeat="" length="0"></div>',
+          '</div>'
+        ));
       });
     });
   });
@@ -408,6 +508,13 @@ describe('compile()', function() {
       register('myComponent', function() {
         return {
           link: priorityLinkSpy
+        };
+      });
+
+      register('myComponent', function() {
+        return {
+          priority: 100,
+          link: normalLinkSpy
         };
       });
 
