@@ -102,6 +102,58 @@ describe('compile()', function() {
     });
   });
 
+  describe('addDirective()', function() {
+    var directives;
+
+    beforeEach(function() {
+      directives = [];
+    });
+
+    it('should add a directive with a maximum priority limit', function() {
+      function postLinkFn () {}
+
+      register('repeat', function() {
+        return {priority: 1000, compile: noop};
+      });
+
+      register('repeat', function() {
+        return {
+          priority: 400,
+          compile: function() {
+            return postLinkFn;
+          }
+        };
+      });
+
+      addDirective('repeat', 'A', directives, 1000);
+
+      expect(directives[0].compile()).toBe(postLinkFn);
+    });
+
+    it('should add a specific type of directive', function() {
+      function postLinkFn () {}
+
+      register('usersList', function() {
+        return {compile: noop, type: 'A'};
+      });
+
+      register('usersList', function() {
+        return {compile: function() { return postLinkFn; }, type: 'E'};
+      });
+
+      addDirective('usersList', 'A', directives);
+
+      expect(directives.length).toBe(1);
+      expect(directives[0].name).toBe('usersList');
+      expect(directives[0].compile).toBe(noop);
+
+      addDirective('usersList', 'E', directives);
+
+      expect(directives.length).toBe(2);
+      expect(directives[1].name).toBe('usersList');
+      expect(directives[1].compile()).toBe(postLinkFn);
+    });
+  });
 
   describe('transcludeFn()', function() {
     var scope;
