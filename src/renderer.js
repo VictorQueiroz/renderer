@@ -49,8 +49,7 @@ function registerDirective(name, factory, registry) {
 						require: (options.controller && options.name)
 					});
 
-					directive = new Directive(name, options);
-					instances.push(directive);
+					instances.push(options);
 				});
 
 				return instances;
