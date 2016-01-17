@@ -2,9 +2,17 @@ function dom() {
   return toArray(arguments).join('');
 }
 
-function createNode (html) {
-  var div = document.createElement('div');
-  div.innerHTML = html;
+function createNode () {
+  var args = toArray(arguments),
+      div = document.createElement('div'),
+      content = new Array(args.length);
+
+  for(var i = 0; i < args.length; i++) {
+    content[i] = args[i];
+  }
+
+  div.innerHTML = content.join('');
+
   return div;
 }
 
