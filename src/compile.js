@@ -179,7 +179,7 @@ function invokeLinkFn(linkFn, scope, node, attributes, controllers, transcludeFn
   linkFn(scope, node, attributes, controllers, transcludeFn);
 }
 
-function addDirective(name, directives, maxPriority) {
+function addDirective(name, type, directives, maxPriority) {
   var i,
       ii,
       instances,
@@ -189,7 +189,7 @@ function addDirective(name, directives, maxPriority) {
     for(i = 0, ii = instances.length; i < ii; i++) {
       directive = instances[i];
 
-      if((isUndefined(maxPriority) || maxPriority > directive.priority)) {
+      if((isUndefined(maxPriority) || maxPriority > directive.priority) && directive.type.indexOf(type) > -1) {
         directives.push(directive);
       }
     }
@@ -211,21 +211,37 @@ function scan(node, directives, attributes, maxPriority) {
       ii,
       name,
       attr,
-      attrs;
+      attrs,
+      classes;
 
-  if(node.nodeType == Node.ELEMENT_NODE) {
-    name = camelCase(node.tagName),
-    attrs = node.attributes,
-    addDirective(name, directives, maxPriority);
-  } else {
-    attrs = {};
-  }
+  switch(node.nodeType) {
+    case Node.ELEMENT_NODE: /* Element */
+      name = camelCase(node.tagName),
+      attrs = node.attributes,
 
-  for(i = 0, ii = attrs.length; i < ii; i++) {
-    attr = attrs[i];
-    name = camelCase(attr.name);
+      // Element tag name
+      addDirective(name, 'E', directives, maxPriority);
 
-    attributes[name] = attr.value;
+      for(i = 0, ii = attrs.length; i < ii; i++) {
+        attr = attrs[i];
+        name = camelCase(attr.name);
+
+        attributes[name] = attr.value;
+
+        // Attributes
+        addDirective(name, 'A', directives, maxPriority);
+      }
+
+      classes = node.classList;
+
+      for(i = 0, ii = classes.length; i < ii; i++) {
+        name = camelCase(classes[i]);
+
+        // Classes
+        addDirective(name, 'C', directives, maxPriority);
+      }
+
+      break;
   }
 
   directives.sort(byPriority);
