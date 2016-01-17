@@ -1,6 +1,6 @@
 var registry = directiveRegistry;
 
-function compile(node) {
+function compile(node, transcludeFn, maxPriority) {
   var nodes;
 
   if(isArray(node) || (node instanceof NodeList === true)) {
@@ -11,7 +11,7 @@ function compile(node) {
     nodes.push(node);
   }
 
-  var compositeLinkFn = compileNodes(nodes);
+  var compositeLinkFn = compileNodes(nodes, transcludeFn, maxPriority);
 
   return publicLinkFn;
 
@@ -34,6 +34,14 @@ function compile(node) {
     if(compositeLinkFn) compositeLinkFn(scope, linkNodes);
 
     return linkNodes;
+  }
+}
+
+function replaceWith (node, replaceElement) {
+  var parent = node.parentNode;
+
+  if(parent) {
+    parent.replaceChild(replaceElement, node);
   }
 }
 
@@ -65,14 +73,23 @@ function apply(directives, node, attributes, transcludeFn) {
     }
 
     if(directiveValue = directive.transclude) {
-      var template = new Array(node.childNodes.length);
+      if(directiveValue == 'element') {
+        var template = node;
 
-      for(var i = 0; i < template.length; i++) {
-        template[i] = node.childNodes[i];
+        node = document.createComment(' ' + directive.name + ' ');
+        replaceWith(template, node);
+
+        childTranscludeFn = compile(template, transcludeFn, terminalPriority);
+      } else {
+        var template = new Array(node.childNodes.length);
+
+        for(var i = 0; i < template.length; i++) {
+          template[i] = node.childNodes[i];
+        }
+
+        // child nodes naked transclude function generated
+        childTranscludeFn = compile(template, transcludeFn);
       }
-
-      // child nodes naked transclude function generated
-      childTranscludeFn = compile(template);
     }
 
     if(directiveValue = directive.template) {
@@ -214,7 +231,7 @@ function scan(node, directives, attributes, maxPriority) {
   directives.sort(byPriority);
 }
 
-function compileNodes(nodeList, transcludeFn) {
+function compileNodes(nodeList, transcludeFn, maxPriority) {
   var i,
       linkFns = [],
       childLinkFn,
@@ -230,7 +247,7 @@ function compileNodes(nodeList, transcludeFn) {
     directives = [],
     attributes = new Attributes();
 
-    scan(nodeList[i], directives, attributes);
+    scan(nodeList[i], directives, attributes, i === 0 ? maxPriority : undefined);
 
     nodeLinkFn = directives.length ? apply(directives, nodeList[i], attributes, transcludeFn) : null;
 
@@ -285,7 +302,7 @@ function compileNodes(nodeList, transcludeFn) {
       node = stableNodeList[linkFns[i++]];
       nodeLinkFn = linkFns[i++];
       childLinkFn = linkFns[i++];
-      transcludeFn = nodeLinkFn.transcludeFn;
+      transcludeFn = nodeLinkFn && nodeLinkFn.transcludeFn;
 
       if(nodeLinkFn) {
         nodeLinkFn(scope, node, childLinkFn, transcludeFn);
