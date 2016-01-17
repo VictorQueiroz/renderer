@@ -46,7 +46,64 @@ describe('compile()', function() {
     }
   });
 
-  describe('transclude', function() {
+  describe('type', function() {
+    var node,
+        scope = new Scope(),
+        postLinkFn;
+
+    beforeEach(function() {
+      postLinkFn = jasmine.createSpy();
+    });
+
+    it('should match directives by attributes', function() {
+      register('matchAttrDirective', function() {
+        return {
+          type: 'A',
+          template: '<span>Compiled directive!</span>',
+          compile: function() {
+            return postLinkFn;
+          }
+        }
+      });
+
+      node = createNode(
+        '<div match-attr-directive></div>',
+        '<match-attr-directive></match-attr-directive>'
+      );
+
+      compile(node)(scope);
+
+      expect(postLinkFn).toHaveBeenCalled();
+      expect(node.innerHTML).toEqual(dom(
+        '<div match-attr-directive="">',
+          '<span>Compiled directive!</span>',
+        '</div>',
+        '<match-attr-directive></match-attr-directive>'
+      ));
+    });
+
+    it('should match directives by classes', function() {
+      register('dropdown', function() {
+        return {
+          type: 'C',
+          compile: function() {
+            return postLinkFn;
+          }
+        }
+      });
+
+      node = createNode(
+        '<ul class="dropdown"></div>'
+      );
+
+      compile(node)(scope);
+
+      expect(postLinkFn).toHaveBeenCalled();
+    });
+  });
+
+
+  describe('transcludeFn()', function() {
     var scope;
 
     beforeEach(function() {
