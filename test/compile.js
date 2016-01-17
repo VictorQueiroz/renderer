@@ -1,8 +1,12 @@
-var createNode = function(html) {
+function dom() {
+  return toArray(arguments).join('');
+}
+
+function createNode (html) {
   var div = document.createElement('div');
   div.innerHTML = html;
   return div;
-};
+}
 
 describe('compile()', function() {
   var node,
