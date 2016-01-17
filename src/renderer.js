@@ -42,7 +42,7 @@ function registerDirective(name, factory, registry) {
 						priority: 0,
 						index: index,
 						name: name,
-						restrict: 'EA'
+						type: 'EA'
 					});
 
 					defaults(options, {
