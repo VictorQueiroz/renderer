@@ -35,6 +35,61 @@ describe('compile()', function() {
   });
 
   describe('transclude', function() {
+    var scope;
+
+    beforeEach(function() {
+      scope = new Scope();
+    });
+
+    it('should inherit a transclude function from the actual node or a parent one', function() {
+      node = createNode('<transclude><span></span><div></div></transclude>');
+
+      register('transclude', function() {
+        return {
+          transclude: true,
+          template: '<transclude-me><wrap-me></wrap-me></transclude-me>'
+        };
+      });
+
+      register('transcludeMe', function() {
+        return {
+          transclude: true,
+          template: '<wrap-me></wrap-me>'
+        };
+      });
+
+      register('wrapMe', function() {
+        return {
+          link: function(scope, element, attrs, ctrl, transclude) {
+            transclude(function cloneAttachFn (clones) {
+              var fragment = document.createDocumentFragment();
+
+              for(var i = 0; i < clones.length; i++) {
+                fragment.appendChild(clones[i]);
+              }
+
+              element.appendChild(fragment);
+            });
+          }
+        };
+      });
+
+      compile(node)(scope);
+
+      expect(node.innerHTML).toEqual(dom(
+        '<transclude>',
+          '<transclude-me>',
+            '<wrap-me>',
+              '<wrap-me>',
+                '<span></span>',
+                '<div></div>',
+              '</wrap-me>',
+            '</wrap-me>',
+          '</transclude-me>',
+        '</transclude>'
+      ));
+    });
+
     describe('content', function() {
       var childNodes,
           postLinkSpy,
@@ -145,7 +200,33 @@ describe('compile()', function() {
     });
 
     describe('element', function() {
+      var node,
+          scope = new Scope(),
+          postLinkSpy;
 
+      beforeEach(function() {
+        postLinkSpy = jasmine.createSpy('postLinkSpy');
+      });
+
+      it('should replace the element with a comment', function() {
+        node = createNode('<repeat></repeat>');
+
+        register('repeat', function() {
+          return {
+            transclude: 'element',
+            priority: 1000,
+            terminal: true,
+            compile: function() {
+              return postLinkSpy;
+            }
+          };
+        });
+
+        compile(node)(scope);
+
+        expect(postLinkSpy).toHaveBeenCalled();
+        expect(node.innerHTML).toEqual('<!-- repeat -->');
+      });
     });
   });
 
