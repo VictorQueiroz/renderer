@@ -34,6 +34,121 @@ describe('compile()', function() {
     }
   });
 
+  describe('transclude', function() {
+    describe('content', function() {
+      var childNodes,
+          postLinkSpy,
+
+          node,
+          scope = new Scope();
+
+      beforeEach(function() {
+        node = document.createElement('transclude-directive');
+
+        for(var i = 0; i < 4; i++) {
+          node.appendChild(document.createElement('button'));
+        }
+
+        childNodes = [];
+        childNodes.push(node);
+
+        postLinkSpy = jasmine.createSpy();
+      });
+
+      it('should carry a transclude function to the child node links if a parent generate one', function() {
+        register('transcludeDirective', function() {
+          return {
+            template: '<transclude-content></transclude-content>',
+            transclude: true
+          };
+        });
+
+        register('transcludeContent', function() {
+          return {
+            compile: function(element, attrs, transclude) {
+              expect(typeof transclude).toBe('function');
+
+              return function(scope, element, attrs, ctrl, transclude) {
+                expect(typeof transclude).toBe('function');
+                expect(transclude.name).toBe('scopeBoundTranscludeFn');
+
+                postLinkSpy();
+              };
+            }
+          };
+        });
+
+        compileNodes(childNodes)(scope, childNodes);
+
+        expect(postLinkSpy).toHaveBeenCalled();
+      });
+
+      it('should compile all the contents directives properly', function() {
+        var buttonCompileSpy = jasmine.createSpy(),
+            buttonPreSpy = jasmine.createSpy(),
+            buttonPostSpy = jasmine.createSpy();
+
+        register('transcludeDirective', function() {
+          return {
+            template: '<transclude-content></transclude-content>',
+            transclude: true
+          };
+        });
+
+        register('transcludeContent', function() {
+          return {
+            link: function(scope, element, attrs, ctrl, transclude) {
+              transclude(function(clones) {
+                var fragment = document.createDocumentFragment();
+
+                for(var i = 0; i < clones.length; i++) {
+                  fragment.appendChild(clones[i]);
+                }
+
+                element.appendChild(fragment);
+              });
+            }
+          };
+        });
+
+        register('button', function() {
+          var i = 0;
+
+          return {
+            template: 'Testing button ',
+            compile: function(element) {
+              buttonCompileSpy();
+
+              element.innerHTML += i++;
+
+              return {pre: buttonPreSpy, post: buttonPostSpy};
+            }
+          };
+        });
+
+        compileNodes(childNodes)(scope, childNodes);
+
+        expect(node.outerHTML).toEqual(
+          '<transclude-directive>' +
+            '<transclude-content>' +
+              '<button>Testing button 0</button>' +
+              '<button>Testing button 1</button>' +
+              '<button>Testing button 2</button>' +
+              '<button>Testing button 3</button>' +
+            '</transclude-content>' +
+          '</transclude-directive>'
+        );
+        expect(buttonCompileSpy).toHaveBeenCalled();
+        expect(buttonPreSpy).toHaveBeenCalled();
+        expect(buttonPostSpy).toHaveBeenCalled();
+      });
+    });
+
+    describe('element', function() {
+
+    });
+  });
+
   describe('scan()', function() {
     var node,
         directives,
@@ -212,7 +327,7 @@ describe('compile()', function() {
       scan(node, directives);
       apply(directives, node, attributes);
 
-      expect(compileSpy).toHaveBeenCalledWith(node, attributes);
+      expect(compileSpy).toHaveBeenCalledWith(node, attributes, undefined);
     });
 
     it('should not compile directives with priority bellow terminal priority defined by a "terminal" directive', function() {
@@ -266,7 +381,7 @@ describe('compile()', function() {
         nodeLinkFn = apply(directives, node, attributes);
         nodeLinkFn(scope, node);
 
-        expect(postLinkSpy).toHaveBeenCalledWith(scope, node, attributes);
+        expect(postLinkSpy).toHaveBeenCalled();
       });
 
       it('should execute a child link function if provide one', function() {
