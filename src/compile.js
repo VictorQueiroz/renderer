@@ -74,9 +74,11 @@ function apply(directives, node, attributes, transcludeFn) {
 
     if(directiveValue = directive.transclude) {
       if(directiveValue == 'element') {
+        terminalPriority = directive.priority;
+
         var template = node;
 
-        node = document.createComment(' ' + directive.name + ' ');
+        node = document.createComment(' ' + directive.name + ': ' + attributes[directive.name] + ' ');
         replaceWith(template, node);
 
         childTranscludeFn = compile(template, transcludeFn, terminalPriority);
