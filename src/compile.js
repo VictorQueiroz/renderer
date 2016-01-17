@@ -192,11 +192,17 @@ function byPriority(a, b) {
 function scan(node, directives, attributes, maxPriority) {
   var i,
       ii,
-      name = camelCase(node.tagName),
+      name,
       attr,
-      attrs = node.attributes;
+      attrs;
 
-  addDirective(name, directives, maxPriority);
+  if(node.nodeType == Node.ELEMENT_NODE) {
+    name = camelCase(node.tagName),
+    attrs = node.attributes,
+    addDirective(name, directives, maxPriority);
+  } else {
+    attrs = {};
+  }
 
   for(i = 0, ii = attrs.length; i < ii; i++) {
     attr = attrs[i];
