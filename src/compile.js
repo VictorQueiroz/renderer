@@ -207,64 +207,6 @@ function apply(directives, node, attributes, transcludeFn) {
 
   return nodeLinkFn;
 
-  function setupControllers(directives, controllers, scope, node, attributes, $transcludeFn) {
-    var ctor,
-        dataName,
-        directive;
-
-    for(var name in directives) {
-      dataName = '$' + name + 'Controller',
-      directive = directives[name],
-      ctor = directive.controller;
-
-      if(controllers[name]) {
-        continue;
-      }
-
-      controllers[name] = renderer.controller(ctor, scope, node, attributes, $transcludeFn);
-      data(node, dataName, controllers[name]);
-    }
-  }
-
-  function getControllers(require, node, controllers, directiveName) {
-    var value;
-
-    if(isArray(require)) {
-      value = new Array(require.length);
-
-      var i, ii;
-
-      for(i = 0, ii = value.length; i < ii; i++) {
-        value[i] = getControllers(require[i], node, controllers, directiveName);
-      }
-
-      return value;
-    }
-
-    var match = require.match(REQUIRE_PREFIX_REGEXP),
-        name = require.substring(match[0].length),
-        inheritType = match[1] || match[3],
-        optional = match[2] === '?';
-
-    //If only parents then start at the parent element
-    if(inheritType === '^^') {
-      node = node.parentNode;
-    } else {
-      value = controllers && controllers[name];
-    }
-
-    if(!value) {
-      var dataName = '$' + name + 'Controller';
-      value = inheritType ? inheritedData(node, dataName) : data(node, dataName);
-    }
-
-    if(!value && !optional) {
-      throw new Error("Controller '" + name + "', required by directive '" + directiveName + "', can't be found!");
-    }
-
-    return value;
-  }
-
   /**
    *  - Executes the pre and post linking functions
    */
@@ -314,6 +256,64 @@ function apply(directives, node, attributes, transcludeFn) {
       transcludeFn($scope, cloneAttachFn);
     }
   };
+}
+
+function setupControllers(directives, controllers, scope, node, attributes, $transcludeFn) {
+  var ctor,
+      dataName,
+      directive;
+
+  for(var name in directives) {
+    dataName = '$' + name + 'Controller',
+    directive = directives[name],
+    ctor = directive.controller;
+
+    if(controllers[name]) {
+      continue;
+    }
+
+    controllers[name] = renderer.controller(ctor, scope, node, attributes, $transcludeFn);
+    data(node, dataName, controllers[name]);
+  }
+}
+
+function getControllers(require, node, controllers, directiveName) {
+  var value;
+
+  if(isArray(require)) {
+    value = new Array(require.length);
+
+    var i, ii;
+
+    for(i = 0, ii = value.length; i < ii; i++) {
+      value[i] = getControllers(require[i], node, controllers, directiveName);
+    }
+
+    return value;
+  }
+
+  var match = require.match(REQUIRE_PREFIX_REGEXP),
+      name = require.substring(match[0].length),
+      inheritType = match[1] || match[3],
+      optional = match[2] === '?';
+
+  //If only parents then start at the parent element
+  if(inheritType === '^^') {
+    node = node.parentNode;
+  } else {
+    value = controllers && controllers[name];
+  }
+
+  if(!value) {
+    var dataName = '$' + name + 'Controller';
+    value = inheritType ? inheritedData(node, dataName) : data(node, dataName);
+  }
+
+  if(!value && !optional) {
+    throw new Error("Controller '" + name + "', required by directive '" + directiveName + "', can't be found!");
+  }
+
+  return value;
 }
 
 function invokeLinkFn(linkFn, scope, node, attributes, controllers, transcludeFn) {
