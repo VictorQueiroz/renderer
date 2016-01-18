@@ -47,13 +47,17 @@ function replaceWith (node, replaceElement) {
 
 function data(node, key, value) {
   if(node && node.nodeType === Node.ELEMENT_NODE) {
-    if(!node.hasOwnProperty(cacheKey)) {
-      node[cacheKey] = nextId();
+    var id;
 
-      elCache[node[cacheKey]] = {};
+    if(!node.hasOwnProperty(cacheKey)) {
+      id = node[cacheKey] = nextId();
+
+      elCache[id] = {};
+    } else {
+      id = node[cacheKey];
     }
 
-    var cache = elCache[node[cacheKey]];
+    var cache = elCache[id];
 
     if(!key) {
       return cache;
@@ -65,8 +69,6 @@ function data(node, key, value) {
       cache[key] = value;
     }
   }
-
-  return null;
 }
 
 function inheritedData (element, name, value) {
