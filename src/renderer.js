@@ -126,8 +126,8 @@ function templateCache (path, value) {
   return null;
 }
 
-renderer.compile = function(node, transcludeFn, maxPriority, previousCompileContext) {
-  return compile(node, transcludeFn, maxPriority, previousCompileContext);
+renderer.compile = function(node, transcludeFn, maxPriority) {
+  return compile(node, transcludeFn, maxPriority);
 };
 
 var instances = [],
@@ -151,6 +151,10 @@ extend(renderer, {
   beforeCompileQueue: beforeCompileQueue,
 
   afterCompileQueue: afterCompileQueue,
+
+  controller: function(ctor, scope, node, attributes, $transcludeFn) {
+    return (new ctor(scope, node, attributes, $transcludeFn));
+  },
 
   beforeCompile: function(fn) {
     beforeCompileQueue.unshift(fn);
@@ -246,7 +250,6 @@ global.renderer = renderer;
 
 renderer.prototype = {
 	__elementCache: {},
-
 	__cacheKey: '$$$rt339'
 };
 
