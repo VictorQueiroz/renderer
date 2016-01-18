@@ -46,6 +46,30 @@ describe('compile()', function() {
     }
   });
 
+  describe('data()', function() {
+    var node;
+
+    beforeEach(function() {
+      if(node) clearData(node);
+      node = createNode('');
+    });
+
+    it('should append data to a node element', function() {
+      var appCtrl = noop;
+
+      data(node, '$appCtrl', appCtrl)
+
+      expect(data(node, '$appCtrl')).toBe(appCtrl);
+    });
+
+    it('should return the entire element cache', function() {
+      var appCtrl = noop;
+      data(node, '$appCtrl', appCtrl);
+
+      expect(data(node)).toEqual({$appCtrl: appCtrl});
+    });
+  });
+
   it('should compile only the directives with priority bellow "maxPriority"', function() {
     var scope = new Scope(),
         divSpy = jasmine.createSpy(),
