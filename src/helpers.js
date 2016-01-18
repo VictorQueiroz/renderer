@@ -1,23 +1,23 @@
 var isArray = Array.isArray;
 
 function toArray(target) {
-	return Array.prototype.slice.apply(target);
+  return Array.prototype.slice.apply(target);
 }
 
 function isUndefined(target) {
-	return typeof target === 'undefined';
+  return typeof target === 'undefined';
 }
 
 function isNull (target) {
-	return target === null && typeof target == 'object';
+  return target === null && typeof target == 'object';
 }
 
 function isBoolean(target) {
-	return typeof target === 'boolean';
+  return typeof target === 'boolean';
 }
 
 function isDefined(target) {
-	return isUndefined(target) === false;
+  return isUndefined(target) === false;
 }
 
 function isDate(value) {
@@ -33,7 +33,7 @@ function isWindow(value) {
 }
 
 function inherit(parent, extra) {
-	return extend(Object.create(parent), extra);
+  return extend(Object.create(parent), extra);
 }
 
 function join (collection, string) {
@@ -139,246 +139,246 @@ function isEqual(o1, o2) {
 }
 
 function sum(array, fn) {
-	return array.reduce(fn || function(previousValue, currentValue) {
-		return (previousValue + currentValue);
-	});
+  return array.reduce(fn || function(previousValue, currentValue) {
+    return (previousValue + currentValue);
+  });
 }
 
 function first(array) {
-	return array[0];
+  return array[0];
 }
 
 function copy (destination, source) {
-	if(isObject(source)) {
-		var keys = Object.keys(source);
-		var i,
-				ii = keys.length,
-				key,
-				value;
+  if(isObject(source)) {
+    var keys = Object.keys(source);
+    var i,
+        ii = keys.length,
+        key,
+        value;
 
-		for(i = 0; i < ii; i++) {
-			key 		= keys[i];
-			value 	= source[key];
+    for(i = 0; i < ii; i++) {
+      key     = keys[i];
+      value   = source[key];
 
-			if(isObject(value)) {
-				value = copy(isArray(value) ? [] : {}, value);
-			}
+      if(isObject(value)) {
+        value = copy(isArray(value) ? [] : {}, value);
+      }
 
-			destination[key] = value;
-		}
+      destination[key] = value;
+    }
 
-		return destination;
-	}
+    return destination;
+  }
 
-	return source;
+  return source;
 }
 
 function clone (object) {
-	return copy(isArray(object) ? [] : {}, object);
+  return copy(isArray(object) ? [] : {}, object);
 }
 
 function values (object) {
-	var keys = Object.keys(object);
+  var keys = Object.keys(object);
 
-	var i,
-			ii = keys.length,
-			values_ = [];
-	for(i = 0; i < ii; i++) {
-		values_[i] = object[keys[i]];
-	}
+  var i,
+      ii = keys.length,
+      values_ = [];
+  for(i = 0; i < ii; i++) {
+    values_[i] = object[keys[i]];
+  }
 
-	return values_;
+  return values_;
 }
 
 function some(array, iterator, context) {
-	var i,
-			ii = array.length,
-			result = false;
-	for(i = 0; i < ii; i++) {
-		if(iterator.call(context, array, i)) {
-			result = true;
-		}
-	}
-	return result;
+  var i,
+      ii = array.length,
+      result = false;
+  for(i = 0; i < ii; i++) {
+    if(iterator.call(context, array, i)) {
+      result = true;
+    }
+  }
+  return result;
 }
 
 function get (object, path) {
-	var keys = path.split('.');
+  var keys = path.split('.');
 
-	var i,
-			ii = keys.length,
-			result = object;
-	for(i = 0; i < ii; i++) {
-		if(result) {
-			result = result[keys[i]];
-		}
-	}
+  var i,
+      ii = keys.length,
+      result = object;
+  for(i = 0; i < ii; i++) {
+    if(result) {
+      result = result[keys[i]];
+    }
+  }
 
-	return result;
+  return result;
 }
 
 function set (object, path, value) {
-	if(!path) path = '';
+  if(!path) path = '';
 
-	var keys = path.split('.');
+  var keys = path.split('.');
 
-	var i,
-			ii = keys.length,
-			result = object;
+  var i,
+      ii = keys.length,
+      result = object;
 
-	for(i = 0; i < ii; i++) {
-		if(!result) result = {};
-		if(i === (ii - 1)) {
-			result[keys[i]] = value;
-		} else if(result && result.hasOwnProperty(keys[i])) {
-			result = result[keys[i]];
-		} else {
-			result = result[keys[i]] = {};
-		}
-	}
+  for(i = 0; i < ii; i++) {
+    if(!result) result = {};
+    if(i === (ii - 1)) {
+      result[keys[i]] = value;
+    } else if(result && result.hasOwnProperty(keys[i])) {
+      result = result[keys[i]];
+    } else {
+      result = result[keys[i]] = {};
+    }
+  }
 
-	return result;
+  return result;
 }
 
 function has (object, path) {
-	var keys = path.split('.');
+  var keys = path.split('.');
 
-	var i,
-			ii = keys.length,
-			has_ = false,
-			result = object;
+  var i,
+      ii = keys.length,
+      has_ = false,
+      result = object;
 
-	for(i = 0; i < ii; i++) {
-		has_ = false;
+  for(i = 0; i < ii; i++) {
+    has_ = false;
 
-		if(!result) result = {};
-		if(result.hasOwnProperty(keys[i])) {
-			result = result[keys[i]];
-		} else {
-			break;
-		}
+    if(!result) result = {};
+    if(result.hasOwnProperty(keys[i])) {
+      result = result[keys[i]];
+    } else {
+      break;
+    }
 
-		has_ = true;
-	}
+    has_ = true;
+  }
 
-	return has_;
+  return has_;
 }
 
 function noop() {
-	return;
+  return;
 }
 
 function isObject (value) {
-	return value !== null && (typeof value === 'object');
+  return value !== null && (typeof value === 'object');
 }
 
 function isString (value) {
-	return typeof value === 'string';
+  return typeof value === 'string';
 }
 
 function isFunction (value) {
-	return typeof value === 'function';
+  return typeof value === 'function';
 }
 
 function isNumber (value) {
-	return typeof value === 'number';
+  return typeof value === 'number';
 }
 
 function pick(object, keys) {
-	if(isString(keys)) {
-		keys = [keys];
-	}
+  if(isString(keys)) {
+    keys = [keys];
+  }
 
-	var i,
-			ii = keys.length,
-			key,
-			cloned = {};
+  var i,
+      ii = keys.length,
+      key,
+      cloned = {};
 
-	for(i = 0; i < ii; i++) {
-		key = keys[i];
+  for(i = 0; i < ii; i++) {
+    key = keys[i];
 
-		cloned[key] = object[key];
-	}
+    cloned[key] = object[key];
+  }
 
-	return cloned;
+  return cloned;
 }
 
 function omit(object, keys) {
-	if(isString(keys)) {
-		keys = [keys];
-	}
+  if(isString(keys)) {
+    keys = [keys];
+  }
 
-	var objectKeys = Object.keys(object).filter(function(key) {
-		return keys.indexOf(key) > -1;
-	});
+  var objectKeys = Object.keys(object).filter(function(key) {
+    return keys.indexOf(key) > -1;
+  });
 
-	return pick(object, objectKeys);
+  return pick(object, objectKeys);
 }
 
 function extend (target) {
-	if(!target) target = {};
+  if(!target) target = {};
 
-	var sources = toArray(arguments).slice(1).filter(isDefined);
+  var sources = toArray(arguments).slice(1).filter(isDefined);
 
-	var source,
-			value,
-			keys,
-			key,
-			ii = sources.length,
-			jj,
-			i,
-			j;
+  var source,
+      value,
+      keys,
+      key,
+      ii = sources.length,
+      jj,
+      i,
+      j;
 
-	for(i = 0; i < ii; i++) {
-		if((source = sources[i]) && isObject(source)) {
-			keys = Object.keys(source);
-			jj = keys.length;
+  for(i = 0; i < ii; i++) {
+    if((source = sources[i]) && isObject(source)) {
+      keys = Object.keys(source);
+      jj = keys.length;
 
-			for(j = 0; j < jj; j++) {
-				key 					= keys[j];
-				value 				= source[key];
+      for(j = 0; j < jj; j++) {
+        key           = keys[j];
+        value         = source[key];
 
-				target[key] 	= value;
-			}
-		}
-	}
+        target[key]   = value;
+      }
+    }
+  }
 
-	return target;
+  return target;
 }
 
 function defaults (object, source) {
-	var keys = Object.keys(source);
-	var i, ii = keys.length, key, value;
+  var keys = Object.keys(source);
+  var i, ii = keys.length, key, value;
 
-	for(i = 0; i < ii; i++) {
-		key 		= keys[i];
-		value		= source[key];
+  for(i = 0; i < ii; i++) {
+    key     = keys[i];
+    value   = source[key];
 
-		if(!object.hasOwnProperty(key)) {
-			object[key] = value;
-		}
-	}
+    if(!object.hasOwnProperty(key)) {
+      object[key] = value;
+    }
+  }
 }
 
 function forEach (array, iterator, context) {
-	var length;
+  var length;
 
-	if(isArray(array)) {
-		for(i = 0, length = array.length; i < length; i++) {
-			iterator.call(context, array[i], i, array);
-		}
-	} else {
-		var keys = Object.keys(array);
-		var ii = keys.length, i, key, value;
+  if(isArray(array)) {
+    for(i = 0, length = array.length; i < length; i++) {
+      iterator.call(context, array[i], i, array);
+    }
+  } else {
+    var keys = Object.keys(array);
+    var ii = keys.length, i, key, value;
 
-		for(i = 0; i < ii; i++) {
-			key = keys[i];
-			value = array[key];
+    for(i = 0; i < ii; i++) {
+      key = keys[i];
+      value = array[key];
 
-			iterator.call(context, value, key, array);
-		}
-	}
-	return array;
+      iterator.call(context, value, key, array);
+    }
+  }
+  return array;
 }
 
 function map (array, iterator, context) {
@@ -401,14 +401,14 @@ function map (array, iterator, context) {
 }
 
 function camelCase (str) {
-	return (str = str.replace(/[^A-z]/g, ' ')) && lowercase(str).replace(/(?:^\w|[A-Z]|\b\w|\s+)/g, function(match, index) {
-		if (+match === 0) return ""; // or if (/\s+/.test(match)) for white spaces
-		return index === 0 ? match.toLowerCase() : match.toUpperCase();
-	});
+  return (str = str.replace(/[^A-z]/g, ' ')) && lowercase(str).replace(/(?:^\w|[A-Z]|\b\w|\s+)/g, function(match, index) {
+    if (+match === 0) return ""; // or if (/\s+/.test(match)) for white spaces
+    return index === 0 ? match.toLowerCase() : match.toUpperCase();
+  });
 }
 
 function kebabCase(str) {
-	return lowercase(str.replace(/[A-Z]/g, '-$&'));
+  return lowercase(str.replace(/[A-Z]/g, '-$&'));
 }
 
 function toString(value) {
@@ -425,44 +425,54 @@ function trim (str) {
 }
 
 function lowercase(str) {
-	return (isString(str) ? str : toString(str)).toLowerCase();
+  return (isString(str) ? str : toString(str)).toLowerCase();
 }
 
 function lazy(callback, context) {
-	return function() {
-		return bind(callback, context);
-	};
+  return function() {
+    return bind(callback, context);
+  };
 }
 
 function last(array) {
-	return array && array[array.length - 1];
+  return array && array[array.length - 1];
 }
 
-function bind(callback, context) {
-	return function() {
-		return callback.apply(context, arguments);
-	};
+var slice = Array.prototype.slice;
+
+function concat(array1, array2, index) {
+  return array1.concat(slice.call(array2, index));
+}
+
+function bind(fn, context) {
+  var args = arguments.length > 2 ? toArray(arguments).slice(2) : [];
+
+  return function() {
+    return arguments.length
+      ? fn.apply(context, concat(args, arguments, 0))
+      : fn.apply(context, args);
+  };
 }
 
 function inherits (ctor, superCtor, attrs, ctorAttrs) {
-	if (ctor === undefined || ctor === null)
-		throw new TypeError('The constructor to "inherits" must not be ' +
-												'null or undefined');
+  if (ctor === undefined || ctor === null)
+    throw new TypeError('The constructor to "inherits" must not be ' +
+                        'null or undefined');
 
-	if (superCtor === undefined || superCtor === null)
-		throw new TypeError('The super constructor to "inherits" must not ' +
-												'be null or undefined');
+  if (superCtor === undefined || superCtor === null)
+    throw new TypeError('The super constructor to "inherits" must not ' +
+                        'be null or undefined');
 
-	if (superCtor.prototype === undefined)
-		throw new TypeError('The super constructor to "inherits" must ' +
-												'have a prototype');
+  if (superCtor.prototype === undefined)
+    throw new TypeError('The super constructor to "inherits" must ' +
+                        'have a prototype');
 
-	ctor.super_ = superCtor;
-	ctor.prototype = Object.create(superCtor.prototype);
+  ctor.super_ = superCtor;
+  ctor.prototype = Object.create(superCtor.prototype);
 
-	if(attrs) {
-		extend(ctor.prototype, attrs);
-	}
+  if(attrs) {
+    extend(ctor.prototype, attrs);
+  }
 
   if(ctorAttrs) {
     extend(ctor, ctorAttrs);
@@ -471,67 +481,24 @@ function inherits (ctor, superCtor, attrs, ctorAttrs) {
 
 var id = 0;
 function nextId() {
-	return ++id;
-}
-
-function elementData(node, key, value) {
-	if(!node.hasOwnProperty(cacheKey)) {
-		node[cacheKey] = nextId();
-
-		elCache[node[cacheKey]] = {};
-	}
-
-	var cache = elCache[node[cacheKey]];
-
-	if(!key) {
-		return cache;
-	}
-
-	if(!value && cache.hasOwnProperty(key)) {
-		return cache[key];
-	} else if(value) {
-		cache[key] = value;
-	}
-
-	return null;
-}
-
-function elementInheritedData(element, name, value) {
-	// if element is the document object work with the html element instead
-	// this makes $(document).scope() possible
-	if (element.nodeType == Node.DOCUMENT_NODE) {
-		element = element.documentElement;
-	}
-
-	var names = isArray(name) ? name : [name];
-
-	while (element) {
-		for (var i = 0, ii = names.length; i < ii; i++) {
-			if ((value = elementData(element, names[i]))) return value;
-		}
-
-		// If dealing with a document fragment node with a host element, and no parent, use the host
-		// element as the parent. This enables directives within a Shadow DOM or polyfilled Shadow DOM
-		// to lookup parent controllers.
-		element = element.parentNode || (element.nodeType === Node.DOCUMENT_FRAGMENT_NODE && element.host);
-	}
+  return ++id;
 }
 
 function request (url, successFn, errorFn) {
-	var xhr = new XMLHttpRequest();
+  var xhr = new XMLHttpRequest();
 
-	if(!successFn) {
-		throw new Error('you must pass a success callback');
-	}
+  if(!successFn) {
+    throw new Error('you must pass a success callback');
+  }
 
-	xhr.addEventListener('readystatechange', function(e) {
-		if(xhr.readyState == XMLHttpRequest.DONE) {
-			setTimeout(function() {
-				successFn(xhr.responseText);
-			});
-		}
-	});
+  xhr.addEventListener('readystatechange', function(e) {
+    if(xhr.readyState == XMLHttpRequest.DONE) {
+      setTimeout(function() {
+        successFn(xhr.responseText);
+      });
+    }
+  });
 
-	xhr.open('GET', url, true);
-	xhr.send(null);
+  xhr.open('GET', url, true);
+  xhr.send(null);
 }
