@@ -88,7 +88,72 @@ describe('compile()', function() {
     expect(spyDirective2).not.toHaveBeenCalled();
   });
 
-  describe('type', function() {
+  describe('Controller', function() {
+    var node,
+        scope,
+        controllerSpy;
+
+    beforeEach(function() {
+      scope = new Scope(),
+      controllerSpy = jasmine.createSpy();
+    });
+
+    it('should instantiate a directive controller', function() {
+      function DirectiveController(scope, element, attrs, transcludeFn) {
+        controllerSpy();
+      }
+
+      DirectiveController.prototype = {
+        constructor: DirectiveController
+      };
+
+      register('controller', function() {
+        return {
+          type: 'A',
+          controller: DirectiveController
+        };
+      });
+
+      node = createNode('<div controller></div>');
+
+      compile(node)(scope);
+
+      expect(controllerSpy).toHaveBeenCalled();
+    });
+
+    it('should import parent controllers through "require" directive option', function() {
+      var dropdown,
+          liSpy = jasmine.createSpy();
+
+      function DropdownController() {
+        dropdown = this;
+      }
+
+      node = createNode('<dropdown></dropdown>');
+
+      register('dropdown', function() {
+        return {
+          template: '<li>Option</li>',
+          controller: DropdownController
+        };
+      });
+
+      register('li', function() {
+        return {
+          require: '?^dropdown',
+          link: function(scope, element, attrs, dropdown) {
+            liSpy(dropdown);
+          }
+        };
+      });
+
+      compile(node)(scope);
+
+      expect(liSpy).toHaveBeenCalledWith(dropdown);
+    });
+  });
+
+  describe('Type', function() {
     var node,
         scope = new Scope(),
         postLinkFn;

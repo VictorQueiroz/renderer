@@ -45,6 +45,66 @@ function replaceWith (node, replaceElement) {
   }
 }
 
+function data(node, key, value) {
+  if(node && node.nodeType === Node.ELEMENT_NODE) {
+    if(!node.hasOwnProperty(cacheKey)) {
+      node[cacheKey] = nextId();
+
+      elCache[node[cacheKey]] = {};
+    }
+
+    var cache = elCache[node[cacheKey]];
+
+    if(!key) {
+      return cache;
+    }
+
+    if(!value && cache.hasOwnProperty(key)) {
+      return cache[key];
+    } else if(value) {
+      cache[key] = value;
+    }
+  }
+
+  return null;
+}
+
+function inheritedData (element, name, value) {
+  // if element is the document object work with the html element instead
+  // this makes $(document).scope() possible
+  if (element.nodeType == Node.DOCUMENT_NODE) {
+    element = element.documentElement;
+  }
+
+  var names = isArray(name) ? name : [name];
+
+  while (element) {
+    for (var i = 0, ii = names.length; i < ii; i++) {
+      if ((value = data(element, names[i]))) return value;
+    }
+
+    // If dealing with a document fragment node with a host element, and no parent, use the host
+    // element as the parent. This enables directives within a Shadow DOM or polyfilled Shadow DOM
+    // to lookup parent controllers.
+    element = element.parentNode || (element.nodeType === Node.DOCUMENT_FRAGMENT_NODE && element.host);
+  }
+}
+
+function copyData(destElement, srcElement) {
+  data(destElement, clone(data(srcElement)));
+}
+
+function clearData(element) {
+  if(element && element.nodeType === Node.ELEMENT_NODE) {
+    if(element.hasOwnProperty(cacheKey)) {
+      var id = element[cacheKey];
+      delete elCache[id];
+    }
+  }
+}
+
+var REQUIRE_PREFIX_REGEXP = /^(?:(\^\^?)?(\?)?(\^\^?)?)?/;
+
 /**
  * Apply a set of directives to a node element:
  *  - Execute the compile function of all the directives instances
@@ -60,6 +120,8 @@ function apply(directives, node, attributes, transcludeFn) {
       directiveValue,
       terminalPriority = -Number.MAX_VALUE,
       childTranscludeFn = transcludeFn;
+
+  var directiveControllers = Object.create(null);
 
   // pre/post links
   var preLinkFns = [],
@@ -100,12 +162,16 @@ function apply(directives, node, attributes, transcludeFn) {
       node.innerHTML = '';
     }
 
+    if(directive.controller) {
+      directiveControllers[directive.name] = directive;
+    }
+
     linkFn = directive.compile(node, attributes, childTranscludeFn);
 
     if(isFunction(linkFn)) {
-      addLinkFn(0, linkFn);
+      addLinkFn(0, linkFn, directive);
     } else if(isObject(linkFn)) {
-      addLinkFn(linkFn.pre, linkFn.post);
+      addLinkFn(linkFn.pre, linkFn.post, directive);
     }
 
     if(directive.terminal) {
@@ -115,11 +181,20 @@ function apply(directives, node, attributes, transcludeFn) {
   }
 
   function addLinkFn (pre, post, directive) {
+    var require = directive.require,
+        directiveName = directive.name;
+
     if(pre) {
+      pre.require = require;
+      pre.directiveName = directiveName;
+
       preLinkFns.push(pre);
     }
 
     if(post) {
+      post.require = require;
+      post.directiveName = directiveName;
+
       postLinkFns.push(post);
     }
   }
@@ -128,15 +203,79 @@ function apply(directives, node, attributes, transcludeFn) {
   // so we can pass to the compileNodes() while generating the composite link function
   // to the child nodes of this element in the next lines on the actual compileNodes() loop
   nodeLinkFn.transcludeFn = childTranscludeFn;
+  nodeLinkFn.controllers = Object.create(null);
 
   return nodeLinkFn;
+
+  function setupControllers(directives, controllers, scope, node, attributes, $transcludeFn) {
+    var ctor,
+        dataName,
+        directive;
+
+    for(var name in directives) {
+      dataName = '$' + name + 'Controller',
+      directive = directives[name],
+      ctor = directive.controller;
+
+      if(controllers[name]) {
+        continue;
+      }
+
+      controllers[name] = renderer.controller(ctor, scope, node, attributes, $transcludeFn);
+      data(node, dataName, controllers[name]);
+    }
+  }
+
+  function getControllers(require, node, controllers, directiveName) {
+    var value;
+
+    if(isArray(require)) {
+      value = new Array(require.length);
+
+      var i, ii;
+
+      for(i = 0, ii = value.length; i < ii; i++) {
+        value[i] = getControllers(require[i], node, controllers, directiveName);
+      }
+
+      return value;
+    }
+
+    var match = require.match(REQUIRE_PREFIX_REGEXP),
+        name = require.substring(match[0].length),
+        inheritType = match[1] || match[3],
+        optional = match[2] === '?';
+
+    //If only parents then start at the parent element
+    if(inheritType === '^^') {
+      node = node.parentNode;
+    } else {
+      value = controllers && controllers[name];
+    }
+
+    if(!value) {
+      var dataName = '$' + name + 'Controller';
+      value = inheritType ? inheritedData(node, dataName) : data(node, dataName);
+    }
+
+    if(!value && !optional) {
+      throw new Error("Controller '" + name + "', required by directive '" + directiveName + "', can't be found!");
+    }
+
+    return value;
+  }
 
   /**
    *  - Executes the pre and post linking functions
    */
   function nodeLinkFn (scope, node, childLinkFn, transcludeFn) {
     var i,
-        linkFn;
+        linkFn,
+        controllers = nodeLinkFn.controllers,
+        $transcludeFn = (transcludeFn ? scopeBoundTranscludeFn : undefined);
+
+    // instantiate all the directives controllers on this node link function
+    setupControllers(directiveControllers, controllers, scope, node, attributes, $transcludeFn);
 
     for(i = 0; i < preLinkFns.length; i++) {
       linkFn = preLinkFns[i];
@@ -144,8 +283,8 @@ function apply(directives, node, attributes, transcludeFn) {
         scope,
         node,
         attributes,
-        null,
-        transcludeFn ? scopeBoundTranscludeFn : undefined
+        linkFn.require && getControllers(linkFn.require, node, controllers, linkFn.directiveName),
+        $transcludeFn
       );
     }
 
@@ -159,8 +298,8 @@ function apply(directives, node, attributes, transcludeFn) {
         scope,
         node,
         attributes,
-        null,
-        transcludeFn ? scopeBoundTranscludeFn : undefined
+        linkFn.require && getControllers(linkFn.require, node, controllers, linkFn.directiveName),
+        $transcludeFn
       );
     }
 
