@@ -449,6 +449,83 @@ describe('compile()', function() {
         expect(buttonPreSpy).toHaveBeenCalled();
         expect(buttonPostSpy).toHaveBeenCalled();
       });
+
+      it('should transclude slots based on the element tag name', function() {
+        register('ndTransclude', function() {
+          return function(scope, element, attrs, ctrl, transclude) {
+            transclude(appendCloneNodeFn, attrs.ndTransclude);
+
+            function appendCloneNodeFn(clones) {
+              var fragment = document.createDocumentFragment();
+
+              for(var i = 0; i < clones.length; i++) {
+                fragment.appendChild(clones[i]);
+              }
+
+              element.appendChild(fragment);
+            }
+          };
+        });
+
+        var titlePostLinkFn = jasmine.createSpy(),
+            contentPostLinkFn = jasmine.createSpy();
+
+        forEach({
+          'title': titlePostLinkFn,
+          'content': contentPostLinkFn
+        }, function(fn, name) {
+          register(name, function() {
+            return {
+              type: 'EAC',
+              compile: function() {
+                return fn;
+              }
+            }
+          });
+        });
+
+        register('widget', function() {
+          return {
+            template: dom(
+              '<div class="widget-title" nd-transclude="titleSlot"></div>',
+              '<div class="widget-body" nd-transclude="contentSlot"></div>'
+            ),
+            transclude: {
+              title: 'titleSlot',
+              content: 'contentSlot'
+            }
+          };
+        });
+
+        node = createNode(
+          '<div>',
+            '<widget>',
+              '<title>Last posts</title>',
+              '<content>',
+                'Here we have the widget content.',
+              '</content>',
+            '</widget>',
+          '</div>'
+        );
+
+        compile(node)(scope);
+
+        expect(node.querySelector('widget').outerHTML).toEqual(dom(
+          '<widget>',
+            '<div class="widget-title" nd-transclude="titleSlot">',
+              '<title>Last posts</title>',
+            '</div>',
+            '<div class="widget-body" nd-transclude="contentSlot">',
+              '<content>',
+                'Here we have the widget content.',
+              '</content>',
+            '</div>',
+          '</widget>'
+        ));
+
+        expect(titlePostLinkFn).toHaveBeenCalled();
+        expect(contentPostLinkFn).toHaveBeenCalled();
+      });
     });
 
     describe('element', function() {
