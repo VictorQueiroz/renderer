@@ -619,13 +619,15 @@ describe('compile()', function() {
 
   describe('scan()', function() {
     var node,
+        scope,
         directives,
         attributes;
 
     beforeEach(function() {
       node = document.createElement('my-component'),
+      scope = new Scope(),
       directives = [],
-      attributes = new Attributes();
+      attributes = new Attributes(node);
     });
 
     it('should match directives by the tag name', function() {
@@ -719,6 +721,62 @@ describe('compile()', function() {
       });
     });
 
+    it('should ignore attributes with no expressions to be interpolated', function() {
+      scan(node, directives, attributes);
+      expect(directives.length).toBe(0);
+    });
+
+    it('should add directive for interpolated attributes', function() {
+      node.setAttribute('data-name', '{{ user.name }}');
+      scan(node, directives, attributes);
+      expect(directives.length).toBe(1);
+
+      scope.user = {name: 'John Cena'};
+
+      apply(directives, node, attributes)(scope);
+      expect(node.getAttribute('data-name')).toEqual('John Cena');
+    });
+
+    it('should resolve interpolated attributes at priority "100" before the post linking', function() {
+      var postLinkSpy = jasmine.createSpy();
+
+      node.setAttribute('name', '{{ user.name }}');
+      scope.user = { name: 'Patrick Random' };
+
+      directives.unshift({
+        priority: 200,
+        compile: function(element, attrs) {
+          return {
+            pre: function(scope, element, attrs) {
+              expect(attrs.name).toEqual('{{ user.name }}');
+            },
+
+            post: postLinkSpy
+          };
+        }
+      });
+
+      directives.push({
+        compile: function() {
+          return {
+            pre: function(scope, element, attrs) {
+              expect(attrs.name).toEqual('Patrick Random');
+            },
+
+            post: function(scope, element, attrs) {
+              expect(attrs.name).toEqual('Patrick Random');
+            }
+          };
+        },
+        priority: 0
+      });
+
+      scan(node, directives, attributes);
+      expect(directives[1].priority).toBe(100);
+
+      apply(directives, node, attributes)(scope);
+      expect(postLinkSpy).toHaveBeenCalled();
+    });
   });
 
   describe('compileNodes()' ,function() {
