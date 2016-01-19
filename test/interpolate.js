@@ -31,4 +31,8 @@ describe('interpolate()', function() {
 
     expect(interpolateFn({value: value})).toEqual('interpolate this -> "value here"');
   });
+
+  it('should return empty if no value on "locals" is found', function() {
+    expect(interpolate('some {{value}} text')()).toEqual('some  text');
+  });
 });

@@ -58,10 +58,10 @@ function interpolate(text, options) {
           values = new Array(ii);
 
       for(; i < ii; i++) {
-        values[i] = parseFns[i](context);
+        values[i] = parseFns[i](context) || '';
       }
 
-      return compute(values) || '';
+      return compute(values);
     }, {
       exp: text,
       expressions: expressions
