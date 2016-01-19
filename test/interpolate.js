@@ -1,11 +1,10 @@
 describe('interpolate()', function() {
   var interpolateFn;
 
-  it('should return the interpolation object when there are no bindings and textOnly is undefined', function() {
+  it('should return undefined if no interpolation is found', function() {
     interpolateFn = interpolate('some text');
 
-    expect(interpolateFn.exp).toBe('some text');
-    expect(interpolateFn.expressions).toEqual([]);
+    expect(interpolateFn).toBe(undefined);
   });
 
   it('should match expressions between {{ and }}', function() {

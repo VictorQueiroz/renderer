@@ -51,18 +51,20 @@ function interpolate(text, options) {
     return concat.join('');
   }
 
-  return extend(function interpolateFn(context) {
-    var i = 0,
-        ii = expressions.length,
-        values = new Array(ii);
+  if(expressions.length) {
+    return extend(function interpolateFn(context) {
+      var i = 0,
+          ii = expressions.length,
+          values = new Array(ii);
 
-    for(; i < ii; i++) {
-      values[i] = parseFns[i](context);
-    }
+      for(; i < ii; i++) {
+        values[i] = parseFns[i](context);
+      }
 
-    return compute(values);
-  }, {
-    exp: text,
-    expressions: expressions
-  });
+      return compute(values) || '';
+    }, {
+      exp: text,
+      expressions: expressions
+    });
+  }
 }
