@@ -777,6 +777,23 @@ describe('compile()', function() {
       apply(directives, node, attributes)(scope);
       expect(postLinkSpy).toHaveBeenCalled();
     });
+
+    it('should add directive for text type nodes', function() {
+      var textNode = document.createTextNode('Wrap my value {{value}}');
+
+      node = createNode('');
+      node.appendChild(textNode);
+      node.appendChild(document.createElement('span'));
+
+      scope.value = '"here" ';
+
+      scan(textNode, directives, attributes);
+      apply(directives, textNode, attributes)(scope, textNode);
+
+      expect(node.innerHTML).toEqual(
+        'Wrap my value "here" <span></span>'
+      );
+    });
   });
 
   describe('compileNodes()' ,function() {
