@@ -23,7 +23,7 @@ function registerDirective(name, factory, registry) {
 						instances = [];
 
 				forEach(directives, function(factory, index) {
-					data = renderer.invokeFactory(factory);
+					data = renderer.invokeDirectiveFn(factory);
 					options = {};
 
 					if(isFunction(data)) {
@@ -80,7 +80,7 @@ function getFromRegistry(name, registry) {
 	return loader.load;
 }
 
-renderer.invokeFactory = function(factory) {
+renderer.invokeDirectiveFn = function(factory) {
 	return factory.call(null);
 };
 
