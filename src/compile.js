@@ -507,6 +507,23 @@ function addAttrInterpolateDirective(name, value, directives) {
   });
 }
 
+function addTextInterpolateDirective(directives, text) {
+  var interpolateFn = interpolate(text);
+
+  if(!interpolateFn) return;
+
+  directives.push({
+    priority: 0,
+    compile: function() {
+      return function(scope, textNode) {
+        scope.watchGroup(interpolateFn.expressions, function() {
+          textNode.nodeValue = interpolateFn(scope);
+        });
+      };
+    }
+  });
+}
+
 function scan(node, directives, attributes, maxPriority) {
   var i,
       ii,
@@ -560,6 +577,7 @@ function scan(node, directives, attributes, maxPriority) {
       }
 
       break;
+    case Node.TEXT_NODE: addTextInterpolateDirective(directives, node.nodeValue); break;
   }
 
   directives.sort(byPriority);
