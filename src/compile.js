@@ -153,6 +153,9 @@ function groupScan(node, attrStart, attrEnd) {
   return nodes;
 }
 
+var SCOPE_ISOLATED = 1,
+    SCOPE_CHILD = 2;
+
 /**
  * Apply a set of directives to a node element:
  *  - Execute the compile function of all the directives instances
@@ -176,7 +179,8 @@ function apply(directives, node, attributes, transcludeFn) {
   var preLinkFns = [],
       postLinkFns = [];
 
-  var attrStart,
+  var template,
+      attrStart,
       attrEnd;
 
   for(i = 0, ii = directives.length; i < ii; i++) {
@@ -194,19 +198,39 @@ function apply(directives, node, attributes, transcludeFn) {
       break; // prevent further processing of directives
     }
 
+    if(directiveValue = directive.scope) {
+      // This directive is trying to add an isolated scope.
+      // Check that there is no scope of any kind already
+      if(isObject(directiveValue)) {
+        if(nodeLinkFn.scope) {
+          throw new Error(
+            'You can\'t define a new isolated ' +
+            'scope on a node that already has a ' +
+            'child scope defined'
+          );
+        }
+
+        nodeLinkFn.bindings = directiveValue;
+        nodeLinkFn.scopeType = SCOPE_ISOLATED;
+      } else {
+        nodeLinkFn.scopeType = SCOPE_CHILD;
+      }
+    }
+
     if(directiveValue = directive.transclude) {
       if(directiveValue == 'element') {
         terminalPriority = directive.priority;
 
-        var template = node;
+        template = node;
 
         node = document.createComment(' ' + directiveName + ': ' + attributes[directiveName] + ' ');
         replaceWith(template, node);
 
         childTranscludeFn = compile(template, transcludeFn, terminalPriority);
       } else {
-        var slots = Object.create(null),
-            template = new Array(node.childNodes.length);
+        var slots = Object.create(null);
+
+        template = new Array(node.childNodes.length);
 
         for(var i = 0; i < template.length; i++) {
           template[i] = node.childNodes[i];
@@ -305,6 +329,7 @@ function apply(directives, node, attributes, transcludeFn) {
     if(pre) {
       if(attrStart) pre = groupElementsLinkFnWrapper(pre, attrStart, attrEnd);
       pre.require = require;
+      pre.newScopeType = isDefined(directive.scope);
       pre.directiveName = directiveName;
       preLinkFns.push(pre);
     }
@@ -312,6 +337,7 @@ function apply(directives, node, attributes, transcludeFn) {
     if(post) {
       if(attrStart) post = groupElementsLinkFnWrapper(post, attrStart, attrEnd);
       post.require = require;
+      pre.newScopeType = isDefined(directive.scope);
       post.directiveName = directiveName;
       postLinkFns.push(post);
     }
@@ -333,16 +359,29 @@ function apply(directives, node, attributes, transcludeFn) {
   function nodeLinkFn (scope, node, childLinkFn, transcludeFn) {
     var i,
         linkFn,
+        newScope,
         controllers = nodeLinkFn.controllers,
         $transcludeFn = (transcludeFn ? scopeBoundTranscludeFn : undefined);
 
+    switch(nodeLinkFn.scopeType) {
+      case SCOPE_CHILD:
+        newScope = scope.clone();
+        break;
+      case SCOPE_ISOLATED:
+        newScope = scope.clone(true);
+        directiveBindings(scope, newScope, nodeLinkFn.bindings, attributes);
+        break;
+      default:
+        newScope = scope;
+    }
+
     // instantiate all the directives controllers on this node link function
-    setupControllers(directiveControllers, controllers, scope, node, attributes, $transcludeFn);
+    setupControllers(directiveControllers, controllers, newScope, node, attributes, $transcludeFn);
 
     for(i = 0; i < preLinkFns.length; i++) {
       linkFn = preLinkFns[i];
       invokeLinkFn(linkFn,
-        scope,
+        linkFn.newScopeType ? newScope : scope,
         node,
         attributes,
         linkFn.require && getControllers(linkFn.require, node, controllers, linkFn.directiveName),
@@ -351,13 +390,20 @@ function apply(directives, node, attributes, transcludeFn) {
     }
 
     if(childLinkFn) {
-      childLinkFn(scope, node.childNodes);
+      var scopeType = nodeLinkFn.scopeType,
+          childScope = scope;
+
+      if(newScope) {
+        childScope = newScope;
+      }
+
+      childLinkFn(childScope, node.childNodes);
     }
 
     for(i = postLinkFns.length - 1; i >= 0; i--) {
       linkFn = postLinkFns[i];
       invokeLinkFn(linkFn,
-        scope,
+        linkFn.newScopeType ? newScope : scope,
         node,
         attributes,
         linkFn.require && getControllers(linkFn.require, node, controllers, linkFn.directiveName),
@@ -385,6 +431,82 @@ function apply(directives, node, attributes, transcludeFn) {
       }
     }
   };
+}
+
+// Set up $watches for isolate scope and controller bindings. This process
+// only occurs for isolate scopes and new scopes with controllerAs.
+function directiveBindings(scope, dest, bindings, attrs) {
+  var i = 0,
+      bindingsKeys = Object.keys(bindings),
+      ii = bindingsKeys.length,
+      mode;
+
+  forEach(bindings, function(mode, key) {
+    var attrName,
+        parentGet,
+        parentSet,
+        lastValue;
+
+    mode = bindings[key];
+
+    if(mode.length > 1) {
+      attrName = mode.substring(1);
+      mode = mode[0];
+    } else {
+      attrName = key;
+    }
+
+    switch(mode) {
+      case '@':
+        attrs.$observe(attrName, function(value) {
+          if(isString(value)) {
+            dest[key] = value;
+          }
+        });
+
+        if(isString(attrs[attrName])) {
+          var interpolateFn = interpolate(attrs[attrName]);
+
+          // If the attribute has been provided then we trigger an interpolation to ensure
+          // the value is there for use in the link fn
+          if(interpolateFn) {
+            dest[key] = interpolateFn(scope);
+          }
+        }
+        break;
+      case '=':
+        if(!attrs.hasOwnProperty(attrName)) {
+          break;
+        }
+
+        parentGet = parse(attrs[attrName]);
+        parentSet = parentGet.assign;
+        lastValue = dest[key] = parentGet(scope);
+
+        var parentWatcher = function(value) {
+          if(!isEqual(value, dest[key])) {
+            // we are out of sync and need to copy
+            if(!isEqual(value, lastValue)) {
+              // parent changed and it has precedence
+              dest[key] = value;
+            } else {
+              parentSet(scope, value = dest[key]);
+            }
+          }
+
+          return (lastValue = value);
+        };
+
+        scope.watch(attrs[attrName], parentWatcher);
+
+        // When the property gets changed in the
+        // destination scope, the parent scope gets
+        // updated with the new value, as it should
+        dest.watch(key, function(value) {
+          parentWatcher(get(scope, attrs[attrName]));
+        });
+    }
+  });
 }
 
 function setupControllers(directives, controllers, scope, node, attributes, $transcludeFn) {
