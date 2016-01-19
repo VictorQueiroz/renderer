@@ -55,10 +55,12 @@ function interpolate(text, options) {
     return extend(function interpolateFn(context) {
       var i = 0,
           ii = expressions.length,
+          value,
           values = new Array(ii);
 
       for(; i < ii; i++) {
-        values[i] = parseFns[i](context) || '';
+        value = parseFns[i](context);
+        values[i] = isDefined(value) ? value : '';
       }
 
       return compute(values);
