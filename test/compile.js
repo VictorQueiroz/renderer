@@ -22,6 +22,24 @@ describe('compile()', function() {
       register,
       noop_directive;
 
+  function defineNdTranscludeDirective() {
+    register('ndTransclude', function() {
+      return function(scope, element, attrs, ctrl, transclude) {
+        transclude(appendCloneNodeFn, attrs.ndTransclude);
+
+        function appendCloneNodeFn(clones) {
+          var fragment = document.createDocumentFragment();
+
+          for(var i = 0; i < clones.length; i++) {
+            fragment.appendChild(clones[i]);
+          }
+
+          element.appendChild(fragment);
+        }
+      };
+    });
+  }
+
   beforeEach(function() {
     noop_directive = function(i) {
       return function() {
@@ -451,21 +469,7 @@ describe('compile()', function() {
       });
 
       it('should transclude slots based on the element tag name', function() {
-        register('ndTransclude', function() {
-          return function(scope, element, attrs, ctrl, transclude) {
-            transclude(appendCloneNodeFn, attrs.ndTransclude);
-
-            function appendCloneNodeFn(clones) {
-              var fragment = document.createDocumentFragment();
-
-              for(var i = 0; i < clones.length; i++) {
-                fragment.appendChild(clones[i]);
-              }
-
-              element.appendChild(fragment);
-            }
-          };
-        });
+        defineNdTranscludeDirective();
 
         var titlePostLinkFn = jasmine.createSpy(),
             contentPostLinkFn = jasmine.createSpy();
