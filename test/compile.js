@@ -699,6 +699,26 @@ describe('compile()', function() {
       expect(priorityLinkSpy).toHaveBeenCalled();
       expect(normalLinkSpy).not.toHaveBeenCalled();
     });
+
+    it('should match multi element directives', function() {
+      register('component', function() {
+        return {
+          multiElement: true
+        };
+      });
+
+      node = createNode('<div component-start="attribute value here"></div><div component-end></div>').childNodes[0];
+
+      scan(node, directives, attributes, undefined);
+
+      expect(attributes.component).toBe('attribute value here');
+      expect(directives[0].multiElement).toEqual(true);
+      expect(directives[0]).toEqual({
+        $$start: 'component-start',
+        $$end: 'component-end'
+      });
+    });
+
   });
 
   describe('compileNodes()' ,function() {
@@ -780,6 +800,35 @@ describe('compile()', function() {
     });
   });
 
+  describe('groupScan()', function() {
+    var node;
+
+    it('should throw an error if a non closed directive group is found', function() {
+      node = createNode(
+        '<div></div>',
+        '<div directive-start></div>',
+        '<div>'
+      );
+
+      expect(function() { groupScan(node.childNodes[1], 'directive-start', 'directive-end'); }).toThrow();
+    });
+
+    it('should get the entire group of elements from the "start" to the "end"', function() {
+      node = createNode(
+        '<div attr-start></div>',
+        '<div></div>',
+        '<div attr-end></div>'
+      );
+
+      var nodes = node.childNodes;
+      expect(groupScan(nodes[0], 'attr-start', 'attr-end')).toEqual([
+        nodes[0],
+        nodes[1],
+        nodes[2]
+      ]);
+    });
+  });
+
   describe('apply()', function() {
     var node,
         scope,
@@ -821,6 +870,50 @@ describe('compile()', function() {
       expect(compileSpy).not.toHaveBeenCalled();
       expect(terminalCompileSpy).toHaveBeenCalled();
       expect(specialDirectiveSpy).not.toHaveBeenCalled();
+    });
+
+    var postLinkSpy;
+
+    it('should compile multi element directives', function() {
+      postLinkSpy = jasmine.createSpy();
+
+      node = createNode(
+        '<div component-start></div>',
+        '<div></div>',
+        '<div component-end></div>'
+      );
+
+      for(var i = 0; i < 8; i++) {
+        node.appendChild(document.createElement('div'));
+      }
+
+      node = node.childNodes[0];
+
+      register('component', function() {
+        return {
+          multiElement: true,
+          compile: function() {
+            return function(scope, element) {
+              postLinkSpy(element);
+            };
+          }
+        }
+      });
+
+      scan(node, directives, attributes, undefined);
+
+      apply(directives, node, attributes)(scope, node);
+
+      var lastElement = node,
+          groupElements = [];
+
+      for(var depth = 0; depth < 3; depth++) {
+        groupElements[depth] = lastElement;
+        lastElement = lastElement.nextSibling;
+      }
+
+      expect(postLinkSpy).toHaveBeenCalledWith(groupElements);
+      expect(groupElements).toEqual(groupScan(node, 'component-start', 'component-end'));
     });
 
     describe('nodeLinkFn()', function() {

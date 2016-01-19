@@ -105,7 +105,53 @@ function clearData(element) {
   }
 }
 
+function directiveIsMultiElement(name) {
+  if(registry.hasOwnProperty(name)) {
+    var i,
+        ii,
+        directives = registry.$$get(name);
+
+    for(i = 0, ii = directives.length; i < ii; i++) {
+      if(directives[i].multiElement) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 var REQUIRE_PREFIX_REGEXP = /^(?:(\^\^?)?(\?)?(\^\^?)?)?/;
+
+function groupElementsLinkFnWrapper(linkFn, attrStart, attrEnd) {
+  return function(scope, element, attrs, controllers, transcludeFn) {
+    element = groupScan(element, attrStart, attrEnd);
+    return linkFn(scope, element, attrs, controllers, transcludeFn);
+  };
+}
+
+function groupScan(node, attrStart, attrEnd) {
+  var nodes = [],
+      depth = 0;
+
+  if (attrStart && node && node.nodeType == Node.ELEMENT_NODE && node.hasAttribute(attrStart)) {
+    do {
+      if (!node) {
+        throw new Error("Unterminated attribute, found '" + attrStart + "' but no matching '" + attrEnd + "' found.");
+      }
+      if (node.nodeType == Node.ELEMENT_NODE) {
+        if (node.hasAttribute(attrStart)) depth++;
+        if (node.hasAttribute(attrEnd)) depth--;
+      }
+      nodes.push(node);
+      node = node.nextSibling;
+    } while (depth > 0);
+  } else {
+    nodes.push(node);
+  }
+
+  return nodes;
+}
 
 /**
  * Apply a set of directives to a node element:
@@ -130,9 +176,19 @@ function apply(directives, node, attributes, transcludeFn) {
   var preLinkFns = [],
       postLinkFns = [];
 
+  var attrStart,
+      attrEnd;
+
   for(i = 0, ii = directives.length; i < ii; i++) {
     directive = directives[i],
-    directiveName = directive.name;
+    directiveName = directive.name,
+    attrStart = directive.$$start,
+    attrEnd = directive.$$end;
+
+    // collect multiblock sections
+    if(attrStart) {
+      node = groupScan(node, attrStart, attrEnd);
+    }
 
     if(terminalPriority > directive.priority) {
       break; // prevent further processing of directives
@@ -232,9 +288,9 @@ function apply(directives, node, attributes, transcludeFn) {
     linkFn = directive.compile(node, attributes, childTranscludeFn);
 
     if(isFunction(linkFn)) {
-      addLinkFn(0, linkFn, directive);
+      addLinkFn(0, linkFn, attrStart, attrEnd);
     } else if(isObject(linkFn)) {
-      addLinkFn(linkFn.pre, linkFn.post, directive);
+      addLinkFn(linkFn.pre, linkFn.post, attrStart, attrEnd);
     }
 
     if(directive.terminal) {
@@ -243,21 +299,20 @@ function apply(directives, node, attributes, transcludeFn) {
     }
   }
 
-  function addLinkFn (pre, post, directive) {
-    var require = directive.require,
-        directiveName = directive.name;
+  function addLinkFn (pre, post, attrStart, attrEnd) {
+    var require = directive.require;
 
     if(pre) {
+      if(attrStart) pre = groupElementsLinkFnWrapper(pre, attrStart, attrEnd);
       pre.require = require;
       pre.directiveName = directiveName;
-
       preLinkFns.push(pre);
     }
 
     if(post) {
+      if(attrStart) post = groupElementsLinkFnWrapper(post, attrStart, attrEnd);
       post.require = require;
       post.directiveName = directiveName;
-
       postLinkFns.push(post);
     }
   }
@@ -266,6 +321,8 @@ function apply(directives, node, attributes, transcludeFn) {
   // so we can pass to the compileNodes() while generating the composite link function
   // to the child nodes of this element in the next lines on the actual compileNodes() loop
   nodeLinkFn.transcludeFn = childTranscludeFn;
+
+  // node link function controllers instances
   nodeLinkFn.controllers = Object.create(null);
 
   return nodeLinkFn;
@@ -392,7 +449,11 @@ function invokeLinkFn(linkFn, scope, node, attributes, controllers, transcludeFn
   linkFn(scope, node, attributes, controllers, transcludeFn);
 }
 
-function addDirective(name, type, directives, maxPriority) {
+function inherit(parent, extra) {
+  return extend(Object.create(parent), extra);
+}
+
+function addDirective(name, type, directives, maxPriority, startAttrName, endAttrName) {
   var i,
       ii,
       instances,
@@ -403,6 +464,9 @@ function addDirective(name, type, directives, maxPriority) {
       directive = instances[i];
 
       if((isUndefined(maxPriority) || maxPriority > directive.priority) && directive.type.indexOf(type) > -1) {
+        if(startAttrName) {
+          directive = inherit(directive, {$$start: startAttrName, $$end: endAttrName});
+        }
         directives.push(directive);
       }
     }
@@ -419,30 +483,48 @@ function byPriority(a, b) {
   return a.index - b.index;
 }
 
+var MULTI_ELEMENT_DIR_RE = /^(.+)Start$/;
+
 function scan(node, directives, attributes, maxPriority) {
   var i,
       ii,
       name,
       attr,
       attrs,
+      value,
       classes;
 
   switch(node.nodeType) {
     case Node.ELEMENT_NODE: /* Element */
       name = camelCase(node.tagName),
-      attrs = node.attributes,
+      attrs = node.attributes;
 
       // Element tag name
       addDirective(name, 'E', directives, maxPriority);
 
-      for(i = 0, ii = attrs.length; i < ii; i++) {
-        attr = attrs[i];
-        name = camelCase(attr.name);
+      var nodeAttrName,
+          attrStartName,
+          attrEndName;
 
-        attributes[name] = attr.value;
+      for(i = 0, ii = attrs.length; i < ii; i++) {
+        attr = attrs[i],
+        value = trim(attr.value),
+        nodeAttrName = attr.name,
+        attrStartName = false,
+        attrEndName = false;
+
+        var multiElementMatch = camelCase(nodeAttrName).match(MULTI_ELEMENT_DIR_RE);
+        if(multiElementMatch && directiveIsMultiElement(multiElementMatch[1])) {
+          attrStartName = nodeAttrName;
+          attrEndName = nodeAttrName.substr(0, nodeAttrName.length - 5) + 'end';
+          nodeAttrName = nodeAttrName.substr(0, nodeAttrName.length - 6);
+        }
+
+        name = camelCase(nodeAttrName);
+        attributes[name] = value;
 
         // Attributes
-        addDirective(name, 'A', directives, maxPriority);
+        addDirective(name, 'A', directives, maxPriority, attrStartName, attrEndName);
       }
 
       classes = node.classList;
