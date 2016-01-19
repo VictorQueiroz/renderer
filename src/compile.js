@@ -119,6 +119,7 @@ function apply(directives, node, attributes, transcludeFn) {
       ii,
       linkFn,
       directive,
+      directiveName,
       directiveValue,
       terminalPriority = -Number.MAX_VALUE,
       childTranscludeFn = transcludeFn;
@@ -130,7 +131,8 @@ function apply(directives, node, attributes, transcludeFn) {
       postLinkFns = [];
 
   for(i = 0, ii = directives.length; i < ii; i++) {
-    directive = directives[i];
+    directive = directives[i],
+    directiveName = directive.name;
 
     if(terminalPriority > directive.priority) {
       break; // prevent further processing of directives
@@ -142,7 +144,7 @@ function apply(directives, node, attributes, transcludeFn) {
 
         var template = node;
 
-        node = document.createComment(' ' + directive.name + ': ' + attributes[directive.name] + ' ');
+        node = document.createComment(' ' + directiveName + ': ' + attributes[directiveName] + ' ');
         replaceWith(template, node);
 
         childTranscludeFn = compile(template, transcludeFn, terminalPriority);
