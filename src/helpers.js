@@ -40,6 +40,10 @@ function join (collection, string) {
   return Array.prototype.join.call(collection, string);
 }
 
+function trim (value) {
+  return isString(value) ? value.trim() : value;
+}
+
 var EMPTY = '',
     START_SYMBOL = '{',
     END_SYMBOL = '}';
