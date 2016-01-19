@@ -1035,6 +1035,70 @@ describe('compile()', function() {
 
         expect(childLinkFn).toHaveBeenCalled();
       });
+
+      describe('Scope', function() {
+        it('should create a child scope to the node link function', function() {
+          register('childComponent', function() {
+            return {
+              scope: true,
+              template: '{{ numbers[0] }}',
+              controller: function($scope) {
+                $scope.numbers = [];
+
+                for(var i = 0; i < 10; i++) {
+                  $scope.numbers[i] = (i * 2);
+                }
+
+                expect($scope.parentScope).toBe(scope);
+              }
+            };
+          });
+
+          node = document.createElement('child-component');
+          document.createElement('div').appendChild(node);
+
+          scan(node, directives, attributes);
+
+          var nodeLinkFn = apply(directives, node, attributes),
+              childLinkFn = compileNodes(node.childNodes);
+
+          nodeLinkFn(scope, node, childLinkFn);
+
+          expect(scope.childScopes[0] instanceof Scope === true).toBeTruthy();
+        });
+
+        it('should create a isolated scope to the node link function', function() {
+          scope.parentScopeProperty = {};
+
+          register('childComponent', function() {
+            return {
+              scope: {},
+              template: '{{ numbers[0] }}',
+              controller: function($scope) {
+                $scope.numbers = [];
+
+                for(var i = 0; i < 10; i++) {
+                  $scope.numbers[i] = (i * 2);
+                }
+
+                expect($scope.parentScopeProperty).not.toBeDefined();
+              }
+            };
+          });
+
+          node = document.createElement('child-component');
+          document.createElement('div').appendChild(node);
+
+          scan(node, directives, attributes);
+
+          var nodeLinkFn = apply(directives, node, attributes),
+              childLinkFn = compileNodes(node.childNodes);
+
+          nodeLinkFn(scope, node, childLinkFn);
+          expect(scope.childScopes[0] instanceof Scope === true).toBeTruthy();
+          expect(scope.numbers).toBeUndefined();
+        });
+      });
     });
   });
 });
