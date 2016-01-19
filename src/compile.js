@@ -393,7 +393,7 @@ function apply(directives, node, attributes, transcludeFn) {
       var scopeType = nodeLinkFn.scopeType,
           childScope = scope;
 
-      if(newScope) {
+      if(scopeType === SCOPE_ISOLATED && template) {
         childScope = newScope;
       }
 
