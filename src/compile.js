@@ -485,6 +485,28 @@ function byPriority(a, b) {
 
 var MULTI_ELEMENT_DIR_RE = /^(.+)Start$/;
 
+function addAttrInterpolateDirective(name, value, directives) {
+  var interpolateFn = interpolate(value);
+
+  // no interpolation found -> ignore
+  if(!interpolateFn) return;
+
+  directives.push({
+    priority: 100,
+    compile: function() {
+      return {
+        pre: function attrInterpolatePreLinkFn(scope, element, attrs) {
+          attrs[name] = interpolateFn(scope);
+
+          scope.watchGroup(interpolateFn.expressions, function() {
+            attrs.$set(name, interpolateFn(scope));
+          });
+        }
+      };
+    }
+  });
+}
+
 function scan(node, directives, attributes, maxPriority) {
   var i,
       ii,
@@ -524,6 +546,7 @@ function scan(node, directives, attributes, maxPriority) {
         attributes[name] = value;
 
         // Attributes
+        addAttrInterpolateDirective(name, value, directives);
         addDirective(name, 'A', directives, maxPriority, attrStartName, attrEndName);
       }
 
@@ -556,7 +579,7 @@ function compileNodes(nodeList, transcludeFn, maxPriority) {
 
   for(i = 0; i < nodeList.length; i++) {
     directives = [],
-    attributes = new Attributes();
+    attributes = new Attributes(nodeList[i]);
 
     scan(nodeList[i], directives, attributes, i === 0 ? maxPriority : undefined);
 
