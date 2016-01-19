@@ -147,19 +147,78 @@ function apply(directives, node, attributes, transcludeFn) {
 
         childTranscludeFn = compile(template, transcludeFn, terminalPriority);
       } else {
-        var template = new Array(node.childNodes.length);
+        var slots = Object.create(null),
+            template = new Array(node.childNodes.length);
 
         for(var i = 0; i < template.length; i++) {
           template[i] = node.childNodes[i];
         }
 
+        if(isObject(directiveValue)) {
+          // We have transclusion slots,
+          // collect them up, compile them and store their transclusion functions
+          template = [];
+
+          var slotMap = Object.create(null),
+              filledSlots = Object.create(null);
+
+          // Parse the element selectors
+          forEach(directiveValue, function(slotName, elementSelector) {
+            var optional = (elementSelector.charAt(0) === '?');
+            elementSelector = optional ? elementSelector.substring(1) : elementSelector;
+
+            slotMap[elementSelector] = slotName;
+
+            // We explicitly assign `null` since this implies that a slot was defined but not filled.
+            // Later when calling boundTransclusion functions with a slot name we only error if the
+            // slot is `undefined`
+            slots[slotName] = null;
+
+            // filledSlots contains `true` for all slots that are either optional or have been
+            // filled. This is used to check that we have not missed any required slots
+            filledSlots[slotName] = optional;
+          });
+
+          var $node,
+              slotName,
+              nodeList = node.childNodes;
+
+          // Add the matching elements into their slot
+          for(var i = 0; i < nodeList.length; i++) {
+            $node = nodeList[i],
+            slotName = slotMap[camelCase($node.tagName)];
+
+            if(slotName) {
+              filledSlots[slotName] = true;
+              slots[slotName] = slots[slotName] || [];
+              slots[slotName].push($node);
+            } else {
+              template.push($node);
+            }
+          }
+
+          forEach(filledSlots, function(filled, slotName) {
+            if(!filled) {
+              throw new Error('Required transclusion slot `' + slotName + '` was not filled.');
+            }
+          });
+
+          for (var slotName in slots) {
+            if (slots[slotName]) {
+              // Only define a transclusion function if the slot was filled
+              slots[slotName] = compile(slots[slotName], transcludeFn);
+            }
+          }
+        }
+
         // child nodes naked transclude function generated
         childTranscludeFn = compile(template, transcludeFn);
+        childTranscludeFn.slots = slots;
       }
     }
 
     if(directiveValue = directive.template) {
-      node.innerHTML = directive.template;
+      node.innerHTML = directiveValue;
     } else if (directive.transclude && directive.transclude !== 'element') {
       node.innerHTML = '';
     }
@@ -249,13 +308,22 @@ function apply(directives, node, attributes, transcludeFn) {
 
     // bound the transcludeFn to the above passed scope, so we didn't have
     // to pass the scope as we should in a naked transclude function
-    function scopeBoundTranscludeFn($scope, cloneAttachFn) {
+    function scopeBoundTranscludeFn($scope, cloneAttachFn, slotName) {
       if(isFunction($scope)) {
+        slotName = cloneAttachFn;
         cloneAttachFn = $scope;
         $scope = scope;
       }
 
-      transcludeFn($scope, cloneAttachFn);
+      if(slotName) {
+        var slotTranscludeFn = transcludeFn.slots[slotName];
+
+        if(slotTranscludeFn) {
+          return slotTranscludeFn(scope, cloneAttachFn);
+        }
+      } else {
+        transcludeFn($scope, cloneAttachFn);
+      }
     }
   };
 }
