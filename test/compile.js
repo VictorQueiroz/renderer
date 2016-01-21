@@ -16,29 +16,29 @@ function createNode () {
   return div;
 }
 
+function defineNdTranscludeDirective() {
+  renderer.register('ndTransclude', function() {
+    return function(scope, element, attrs, ctrl, transclude) {
+      transclude(appendCloneNodeFn, attrs.ndTransclude);
+
+      function appendCloneNodeFn(clones) {
+        var fragment = document.createDocumentFragment();
+
+        for(var i = 0; i < clones.length; i++) {
+          fragment.appendChild(clones[i]);
+        }
+
+        element.appendChild(fragment);
+      }
+    };
+  });
+}
+
 describe('compile()', function() {
   var node,
       clear,
       register,
       noop_directive;
-
-  function defineNdTranscludeDirective() {
-    register('ndTransclude', function() {
-      return function(scope, element, attrs, ctrl, transclude) {
-        transclude(appendCloneNodeFn, attrs.ndTransclude);
-
-        function appendCloneNodeFn(clones) {
-          var fragment = document.createDocumentFragment();
-
-          for(var i = 0; i < clones.length; i++) {
-            fragment.appendChild(clones[i]);
-          }
-
-          element.appendChild(fragment);
-        }
-      };
-    });
-  }
 
   beforeEach(function() {
     noop_directive = function(i) {
