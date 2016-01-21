@@ -1,22 +1,52 @@
-var global = window;
+var renderer = {},
 
-var renderer = {};
+    $expsCache = {},
+    $templateCache = {},
 
-var directiveRegistry = {
-	$$get: function(name) {
-		return getFromRegistry(name, directiveRegistry);
-	}
+    elCache,
+    cacheKey;
+
+renderer.prototype = {
+  $$elementCache: {},
+  $$cacheKey: 'nd339'
 };
+
+elCache = renderer.prototype.$$elementCache,
+cacheKey = renderer.prototype.$$cacheKey;
+
+extend(renderer, {
+  compile: compile,
+  interpolate: interpolate,
+  templateCache: templateCache,
+  parse: parse,
+  AST: AST,
+  ASTFinder: ASTFinder,
+  ASTCompiler: ASTCompiler,
+  Lexer: Lexer,
+  Scope: Scope,
+  Grammar: Grammar,
+  Watcher: Watcher,
+  Attributes: Attributes,
+  EventEmitter: EventEmitter,
+  registry: registry,
+  controller: controller,
+  invokeDirectiveFn: invokeDirectiveFn,
+  clearRegistry: clearRegistry,
+  hasDirective: hasDirective,
+  getDirectives: registry.$$get,
+  register: register,
+});
 
 function registerDirective(name, factory, registry) {
 	if(!registry.hasOwnProperty(name)) {
+    var directives = [];
+
 		registry[name] = {
-			directives: [],
+			directives: directives,
 
 			executed: false,
 
 			load: function() {
-				var directives = this.directives;
 				var data,
 						options,
 						directive,
@@ -60,104 +90,49 @@ function registerDirective(name, factory, registry) {
 	registry[name].directives.push(factory);
 }
 
-function getFromRegistry(name, registry) {
-	registry = registry;
-	name = name || '';
-
-	if(!registry.hasOwnProperty(name)) {
-		return null;
-	}
-
-	var loader = registry[name];
-
-	if(!loader.executed) {
-		extend(loader, {
-			load: loader.load(),
-			executed: true
-		});
-	}
-
-	return loader.load;
+function invokeDirectiveFn(factory) {
+  return factory.call(null);
 }
 
-renderer.invokeDirectiveFn = function(factory) {
-	return factory.call(null);
-};
+function hasDirective(name) {
+  return registry.hasOwnProperty(name);
+}
 
-renderer.clearRegistry = function() {
-	forEach(directiveRegistry, function(value, name) {
-		if(name !== '$$get') delete directiveRegistry[name];
-	});
+function clearRegistry() {
+  forEach(registry, function(value, name) {
+    if(name !== '$$get') delete registry[name];
+  });
+}
 
-	return this;
-};
-
-renderer.hasDirective = function(name) {
-	return directiveRegistry.hasOwnProperty(name);
-};
-
-renderer.getDirectives = directiveRegistry.$$get;
-
-renderer.register = function(name, factory) {
-	return registerDirective(name, factory, directiveRegistry);
-};
-
-var expsCache = {},
-    _templateCache = {};
+/**
+ * Register a directive into registry
+ */
+function register(name, factory) {
+  return registerDirective(name, factory, registry);
+}
 
 function parse (exp, cache) {
-  if(expsCache.hasOwnProperty(exp) && cache !== false) {
-    return expsCache[exp];
+  if($expsCache.hasOwnProperty(exp) && cache !== false) {
+    return $expsCache[exp];
   }
 
-  var parser = new Parser(new Lexer());
+  var lexer = new Lexer(),
+      parser = new Parser(lexer);
 
-  return (expsCache[exp] = parser.parse(exp));
+  return ($expsCache[exp] = parser.parse(exp));
 }
 
 function templateCache (path, value) {
   if(isString(path)) {
     if(!value) {
-      return _templateCache[path];
+      return $templateCache[path];
     }
 
-    _templateCache[path] = value;
+    $templateCache[path] = value;
   }
   return null;
 }
 
-renderer.compile = function(node, transcludeFn, maxPriority) {
-  return compile(node, transcludeFn, maxPriority);
-};
-
-extend(renderer, {
-  templateCache: templateCache,
-
-  parse: parse,
-
-  Scope: Scope,
-
-  instances: instances,
-
-  _registry: directiveRegistry,
-
-  onDestroyQueue: onDestroyQueue,
-
-  beforeCompileQueue: beforeCompileQueue,
-
-  afterCompileQueue: afterCompileQueue,
-
-  controller: function(ctor, scope, node, attributes, $transcludeFn) {
-    return (new ctor(scope, node, attributes, $transcludeFn));
-  },
-});
-
-global.renderer = renderer;
-
-renderer.prototype = {
-	__elementCache: {},
-	__cacheKey: '$$$rt339'
-};
-
-var elCache = renderer.prototype.__elementCache;
-var cacheKey = renderer.prototype.__cacheKey;
+function controller (ctor, scope, node, attributes, $transcludeFn) {
+  return (new ctor(scope, node, attributes, $transcludeFn));
+}

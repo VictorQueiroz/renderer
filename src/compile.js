@@ -1,4 +1,28 @@
-var registry = directiveRegistry;
+var registry = {
+  $$get: function(name) {
+    return getFromRegistry(name, registry);
+  }
+};
+
+function getFromRegistry(name, registry) {
+  registry = registry;
+  name = name || '';
+
+  if(!registry.hasOwnProperty(name)) {
+    return null;
+  }
+
+  var loader = registry[name];
+
+  if(!loader.executed) {
+    extend(loader, {
+      load: loader.load(),
+      executed: true
+    });
+  }
+
+  return loader.load;
+}
 
 function compile(node, transcludeFn, maxPriority) {
   var nodes;

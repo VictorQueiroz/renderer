@@ -18,7 +18,7 @@ describe('renderer', function() {
 	it('should register a directive', function() {
 		registerTestDirective();
 
-		expect(directiveRegistry.hasOwnProperty('appVersion')).toBeTruthy();
+		expect(registry.hasOwnProperty('appVersion')).toBeTruthy();
 	});
 
 	it('should get a directive', function() {
@@ -34,10 +34,10 @@ describe('renderer', function() {
 	it('should clear the registry', function() {
     registerTestDirective();
 
-		expect(Object.keys(directiveRegistry).length).toBe(2);
+		expect(Object.keys(registry).length).toBe(2);
 
 		renderer.clearRegistry();
 
-		expect(Object.keys(directiveRegistry).length).toBe(1);
+		expect(Object.keys(registry).length).toBe(1);
 	});
 });
