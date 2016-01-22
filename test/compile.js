@@ -1102,6 +1102,61 @@ describe('compile()', function() {
           expect(scope.childScopes[0] instanceof Scope === true).toBeTruthy();
           expect(scope.numbers).toBeUndefined();
         });
+
+        it('should not pass isolated scopes to the transcluded elements', function() {
+          defineNdTranscludeDirective();
+
+          register('component', function() {
+            return {
+              scope: {},
+              template: '<wrap nd-transclude></wrap>',
+              transclude: true
+            }
+          });
+
+          node = createNode(
+            '<component>',
+              '<div>',
+                '<span>',
+                  '{{user.name}}',
+                '</span>',
+              '</div>',
+            '</component>'
+          );
+          node.setAttribute('master-controller', '');
+
+          register('masterController', function() {
+            return {
+              controller: function($scope) {
+                $scope.user = {name: 'Lily Pad'};
+              }
+            };
+          });
+
+          register('span', function() {
+            return {
+              scope: {},
+              template: '<div nd-transclude></div>',
+              transclude: true
+            };
+          });
+
+          compile(node)(scope);
+
+          expect(node.innerHTML).toBe(dom(
+            '<component>',
+              '<wrap nd-transclude="">',
+                '<div>',
+                  '<span>',
+                    '<div nd-transclude="">',
+                      'Lily Pad',
+                    '</div>',
+                  '</span>',
+                '</div>',
+              '</wrap>',
+            '</component>'
+          ));
+        });
       });
     });
   });
