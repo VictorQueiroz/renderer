@@ -92,15 +92,17 @@
         return "number" == typeof value;
     }
     function extend(target) {
-        target || (target = {});
+        "undefined" == typeof target && (target = {});
         var source, value, keys, key, jj, i, j, sources = toArray(arguments).slice(1).filter(isDefined), ii = sources.length;
         for (i = 0; ii > i; i++) if ((source = sources[i]) && isObject(source)) for (keys = Object.keys(source), 
         jj = keys.length, j = 0; jj > j; j++) key = keys[j], value = source[key], target[key] = value;
         return target;
     }
     function defaults(object, source) {
-        var i, key, value, keys = Object.keys(source), ii = keys.length;
-        for (i = 0; ii > i; i++) key = keys[i], value = source[key], object.hasOwnProperty(key) || (object[key] = value);
+        if (isObject(object)) {
+            var i, key, value, keys = Object.keys(source), ii = keys.length;
+            for (i = 0; ii > i; i++) key = keys[i], value = source[key], object.hasOwnProperty(key) || (object[key] = value);
+        }
     }
     function forEach(array, iterator, context) {
         var length;
@@ -161,48 +163,11 @@
     function nextId() {
         return ++id;
     }
-    function registerDirective(name, factory, registry) {
-        registry.hasOwnProperty(name) || (registry[name] = {
-            directives: [],
-            executed: !1,
-            load: function() {
-                var data, options, directives = this.directives, instances = [];
-                return forEach(directives, function(factory, index) {
-                    data = renderer.invokeDirectiveFn(factory), options = {}, isFunction(data) ? options.compile = lazy(data) : !data.compile && data.link ? options.compile = lazy(data.link) : data.compile || data.link || (data.compile = noop), 
-                    isObject(data) && extend(options, data), defaults(options, {
-                        priority: 0,
-                        index: index,
-                        name: name,
-                        type: "EA"
-                    }), defaults(options, {
-                        require: options.controller && options.name
-                    }), instances.push(options);
-                }), instances;
-            }
-        }), registry[name].directives.push(factory);
-    }
-    function getFromRegistry(name, registry) {
-        if (registry = registry, name = name || "", !registry.hasOwnProperty(name)) return null;
-        var loader = registry[name];
-        return loader.executed || extend(loader, {
-            load: loader.load(),
-            executed: !0
-        }), loader.load;
-    }
-    function parse(exp, cache) {
-        if (expsCache.hasOwnProperty(exp) && cache !== !1) return expsCache[exp];
-        var parser = new Parser(new Lexer());
-        return expsCache[exp] = parser.parse(exp);
-    }
-    function templateCache(path, value) {
-        if (isString(path)) {
-            if (!value) return _templateCache[path];
-            _templateCache[path] = value;
-        }
-        return null;
-    }
     function EventEmitter() {
         this._events = {};
+    }
+    function Observer(object) {
+        this.object = object, this.watchers = [];
     }
     function Watcher() {
         EventEmitter.call(this), this.observer = new Observer(this);
@@ -213,6 +178,10 @@
     }
     function AST(lexer) {
         this.current = null, this.lexer = lexer;
+    }
+    function Lexer() {}
+    function Grammar(fn) {
+        this.state = {}, this.nextId_ = 0, this.current_ = fn || "fn", this.setCurrent(this.current_);
     }
     function isAssignable(ast) {
         return ast.type === AST.Identifier || ast.type === AST.MemberExpression;
@@ -226,35 +195,44 @@
     function ASTFinder(astBuilder) {
         this.astBuilder = astBuilder, this.id = 0;
     }
+    function interpolate(text, options) {
+        function compute(values) {
+            for (var i = 0, ii = values.length; ii > i; i++) {
+                if ("undefined" == typeof values[i]) return;
+                concat[positions[i]] = values[i];
+            }
+            return concat.join("");
+        }
+        var i = 0, ii = text.length, expressions = [];
+        options = options || {};
+        for (var exp, endIndex, startIndex, endSymbol = options.endSymbol || interpolate.endSymbol, startSymbol = options.startSymbol || interpolate.startSymbol, endSymbolLength = endSymbol.length, startSymbolLength = startSymbol.length, concat = [], parseFns = [], positions = []; ii > i; ) {
+            if (!((startIndex = text.indexOf(startSymbol, i)) > -1 && (endIndex = text.indexOf(endSymbol, startIndex + startSymbolLength)) > -1)) {
+                i !== ii && concat.push(text.substring(i));
+                break;
+            }
+            i !== startIndex && concat.push(text.substring(i, startIndex)), exp = text.substring(startIndex + startSymbolLength, endIndex), 
+            expressions.push(exp.trim()), parseFns.push(parse(exp)), i = endIndex + endSymbolLength, 
+            positions.push(concat.length), concat.push("");
+        }
+        return expressions.length ? extend(function(context) {
+            for (var value, i = 0, ii = expressions.length, values = new Array(ii); ii > i; i++) value = parseFns[i](context), 
+            values[i] = isDefined(value) ? value : "";
+            return compute(values);
+        }, {
+            exp: text,
+            expressions: expressions
+        }) : void 0;
+    }
     function Attributes(node) {
         this.$$node = node, this.$$observers = {};
     }
-    function Grammar(fn) {
-        this.state = {}, this.nextId_ = 0, this.current_ = fn || "fn", this.setCurrent(this.current_);
-    }
-    function Lexer() {}
-    function NodeLink(node, directives, attributes, context) {
-        this.node = node, this.links = {
-            post: [],
-            pre: []
-        }, this.scope = null, this.context = context || {}, this.attributes = attributes, 
-        this.directives = directives || [], this.transclude = null, this.terminalPriority = -Number.MAX_VALUE, 
-        this.node.nodeType === Node.TEXT_NODE && this.directives.push({
-            compile: function(node) {
-                return function(scope, node) {
-                    var interpolate = new Interpolate(node.nodeValue);
-                    scope.watchGroup(interpolate.exps, function() {
-                        node.nodeValue = interpolate.compile(scope);
-                    });
-                };
-            }
-        });
-    }
-    function Observer(object) {
-        this.object = object, this.watchers = [];
-    }
-    function Parser(lexer) {
-        this.lexer = lexer, this.ast = new AST(this.lexer), this.astCompiler = new ASTCompiler(this.ast);
+    function getFromRegistry(name, registry) {
+        if (registry = registry, name = name || "", !registry.hasOwnProperty(name)) return null;
+        var loader = registry[name];
+        return loader.executed || extend(loader, {
+            load: loader.load(),
+            executed: !0
+        }), loader.load;
     }
     function compile(node, transcludeFn, maxPriority) {
         function publicLinkFn(scope, cloneConnectFn) {
@@ -317,6 +295,16 @@
         } else nodes.push(node);
         return nodes;
     }
+    function parseElementSelectors(slots, filledSlots, slotMap) {
+        var optional;
+        return function(slotName, elementSelector) {
+            optional = "?" === elementSelector.charAt(0), elementSelector = optional ? elementSelector.substring(1) : elementSelector, 
+            slotMap[elementSelector] = slotName, slots[slotName] = null, filledSlots[slotName] = optional;
+        };
+    }
+    function isSlotFilled(filled, slotName) {
+        if (!filled) throw new Error("Required transclusion slot `" + slotName + "` was not filled.");
+    }
     function apply(directives, node, attributes, transcludeFn) {
         function addLinkFn(pre, post, attrStart, attrEnd) {
             var require = directive.require;
@@ -326,15 +314,20 @@
             post.require = require, pre.newScopeType = isDefined(directive.scope), post.directiveName = directiveName, 
             postLinkFns.push(post));
         }
-        function nodeLinkFn(scope, node, childLinkFn, transcludeFn) {
+        function createScopeBoundTranscludeFn(transcludeFn) {
             function scopeBoundTranscludeFn($scope, cloneAttachFn, slotName) {
-                if (isFunction($scope) && (slotName = cloneAttachFn, cloneAttachFn = $scope, $scope = scope), 
+                if (isFunction($scope) && (slotName = cloneAttachFn, cloneAttachFn = $scope, $scope = scopeBoundTranscludeFn.scope), 
                 slotName) {
                     var slotTranscludeFn = transcludeFn.slots[slotName];
-                    if (slotTranscludeFn) return slotTranscludeFn(scope, cloneAttachFn);
+                    if (slotTranscludeFn) return slotTranscludeFn($scope, cloneAttachFn);
                 } else transcludeFn($scope, cloneAttachFn);
             }
-            var i, linkFn, newScope, controllers = nodeLinkFn.controllers, $transcludeFn = transcludeFn ? scopeBoundTranscludeFn : void 0;
+            if (!transcludeFn) throw new Error("transcludeFn() does not exists");
+            if (transcludeFn.hasOwnProperty("scope")) throw new Error("You cannot rebound a scopeBoundTranscludeFn()");
+            return scopeBoundTranscludeFn;
+        }
+        function nodeLinkFn(scope, node, childLinkFn, transcludeFn) {
+            var i, linkFn, newScope, $transcludeFn, controllers = nodeLinkFn.controllers;
             switch (nodeLinkFn.scopeType) {
               case SCOPE_CHILD:
                 newScope = scope.clone();
@@ -347,11 +340,14 @@
               default:
                 newScope = scope;
             }
-            for (setupControllers(directiveControllers, controllers, newScope, node, attributes, $transcludeFn), 
+            for ($transcludeFn = transcludeFn && !transcludeFn.hasOwnProperty("scope") ? createScopeBoundTranscludeFn(transcludeFn) : transcludeFn, 
+            $transcludeFn && !$transcludeFn.scope && extend($transcludeFn, {
+                scope: newScope ? scope.parentScope : scope
+            }), setupControllers(directiveControllers, controllers, newScope, node, attributes, $transcludeFn), 
             i = 0; i < preLinkFns.length; i++) linkFn = preLinkFns[i], invokeLinkFn(linkFn, linkFn.newScopeType ? newScope : scope, node, attributes, linkFn.require && getControllers(linkFn.require, node, controllers, linkFn.directiveName), $transcludeFn);
             if (childLinkFn) {
                 var scopeType = nodeLinkFn.scopeType, childScope = scope;
-                scopeType === SCOPE_ISOLATED && template && (childScope = newScope), childLinkFn(childScope, node.childNodes);
+                scopeType === SCOPE_ISOLATED && template && (childScope = newScope), childLinkFn(childScope, node.childNodes, $transcludeFn);
             }
             for (i = postLinkFns.length - 1; i >= 0; i--) linkFn = postLinkFns[i], invokeLinkFn(linkFn, linkFn.newScopeType ? newScope : scope, node, attributes, linkFn.require && getControllers(linkFn.require, node, controllers, linkFn.directiveName), $transcludeFn);
         }
@@ -366,24 +362,18 @@
             if (directiveValue = directive.transclude) if ("element" == directiveValue) terminalPriority = directive.priority, 
             template = node, node = document.createComment(" " + directiveName + ": " + attributes[directiveName] + " "), 
             replaceWith(template, node), childTranscludeFn = compile(template, transcludeFn, terminalPriority); else {
-                var slots = Object.create(null);
-                template = new Array(node.childNodes.length);
-                for (var i = 0; i < template.length; i++) template[i] = node.childNodes[i];
+                var j, slots = Object.create(null);
+                for (template = new Array(node.childNodes.length), j = 0; j < template.length; j++) template[j] = node.childNodes[j];
                 if (isObject(directiveValue)) {
                     template = [];
                     var slotMap = Object.create(null), filledSlots = Object.create(null);
-                    forEach(directiveValue, function(slotName, elementSelector) {
-                        var optional = "?" === elementSelector.charAt(0);
-                        elementSelector = optional ? elementSelector.substring(1) : elementSelector, slotMap[elementSelector] = slotName, 
-                        slots[slotName] = null, filledSlots[slotName] = optional;
-                    });
-                    for (var $node, slotName, nodeList = node.childNodes, i = 0; i < nodeList.length; i++) $node = nodeList[i], 
-                    slotName = slotMap[camelCase($node.tagName)], slotName ? (filledSlots[slotName] = !0, 
-                    slots[slotName] = slots[slotName] || [], slots[slotName].push($node)) : template.push($node);
-                    forEach(filledSlots, function(filled, slotName) {
-                        if (!filled) throw new Error("Required transclusion slot `" + slotName + "` was not filled.");
-                    });
-                    for (var slotName in slots) slots[slotName] && (slots[slotName] = compile(slots[slotName], transcludeFn));
+                    forEach(directiveValue, parseElementSelectors(slots, filledSlots, slotMap));
+                    var $node, slotName, nodeList = node.childNodes;
+                    for (j = 0; j < nodeList.length; j++) $node = nodeList[j], slotName = camelCase($node.tagName), 
+                    slotName = slotMap[slotName], slotName ? (filledSlots[slotName] = !0, slots[slotName] = slots[slotName] || [], 
+                    slots[slotName].push($node)) : template.push($node);
+                    forEach(filledSlots, isSlotFilled);
+                    for (slotName in slots) slots[slotName] && (slots[slotName] = compile(slots[slotName], transcludeFn));
                 }
                 childTranscludeFn = compile(template, transcludeFn), childTranscludeFn.slots = slots;
             }
@@ -425,8 +415,8 @@
         });
     }
     function setupControllers(directives, controllers, scope, node, attributes, $transcludeFn) {
-        var ctor, dataName, directive;
-        for (var name in directives) dataName = "$" + name + "Controller", directive = directives[name], 
+        var name, ctor, dataName, directive;
+        for (name in directives) dataName = "$" + name + "Controller", directive = directives[name], 
         ctor = directive.controller, controllers[name] || (controllers[name] = renderer.controller(ctor, scope, node, attributes, $transcludeFn), 
         data(node, dataName, controllers[name]));
     }
@@ -518,7 +508,7 @@
         directives.sort(byPriority);
     }
     function compileNodes(nodeList, transcludeFn, maxPriority) {
-        function compositeLinkFn(scope, nodeList) {
+        function compositeLinkFn(scope, nodeList, scopeBoundTranscludeFn) {
             var i, node, nodeLinkFn, childLinkFn, transcludeFn, stableNodeList;
             if (nodeLinkFnFound) {
                 var idx, nodeListLength = nodeList.length;
@@ -526,7 +516,7 @@
                 stableNodeList[idx] = nodeList[idx];
             } else stableNodeList = nodeList;
             for (i = 0; i < linkFns.length; ) node = stableNodeList[linkFns[i++]], nodeLinkFn = linkFns[i++], 
-            childLinkFn = linkFns[i++], transcludeFn = nodeLinkFn && nodeLinkFn.transcludeFn, 
+            childLinkFn = linkFns[i++], transcludeFn = nodeLinkFn && nodeLinkFn.transcludeFn || scopeBoundTranscludeFn, 
             nodeLinkFn ? nodeLinkFn(scope, node, childLinkFn, transcludeFn) : childLinkFn && childLinkFn(scope, node.childNodes, transcludeFn);
         }
         var i, childLinkFn, linkFnFound, nodeLinkFnFound, directives, nodeLinkFn, attributes, linkFns = [];
@@ -538,105 +528,80 @@
         linkFns.push(i, nodeLinkFn, childLinkFn));
         return linkFnFound ? compositeLinkFn : null;
     }
-    function interpolate(text, options) {
-        function compute(values) {
-            for (var i = 0, ii = values.length; ii > i; i++) {
-                if ("undefined" == typeof values[i]) return;
-                concat[positions[i]] = values[i];
-            }
-            return concat.join("");
-        }
-        var i = 0, ii = text.length, expressions = [];
-        options = options || {};
-        for (var exp, endIndex, startIndex, endSymbol = options.endSymbol || interpolate.endSymbol, startSymbol = options.startSymbol || interpolate.startSymbol, endSymbolLength = endSymbol.length, startSymbolLength = startSymbol.length, concat = [], parseFns = [], positions = []; ii > i; ) {
-            if (!((startIndex = text.indexOf(startSymbol, i)) > -1 && (endIndex = text.indexOf(endSymbol, startIndex + startSymbolLength)) > -1)) {
-                i !== ii && concat.push(text.substring(i));
-                break;
-            }
-            i !== startIndex && concat.push(text.substring(i, startIndex)), exp = text.substring(startIndex + startSymbolLength, endIndex), 
-            expressions.push(exp.trim()), parseFns.push(parse(exp)), i = endIndex + endSymbolLength, 
-            positions.push(concat.length), concat.push("");
-        }
-        return expressions.length ? extend(function(context) {
-            for (var value, i = 0, ii = expressions.length, values = new Array(ii); ii > i; i++) value = parseFns[i](context), 
-            values[i] = isDefined(value) ? value : "";
-            return compute(values);
-        }, {
-            exp: text,
-            expressions: expressions
-        }) : void 0;
-    }
-    var isArray = Array.isArray, EMPTY = "", START_SYMBOL = "{", END_SYMBOL = "}", slice = Array.prototype.slice, id = 0, global = window, renderer = {}, directiveRegistry = {
-        $$get: function(name) {
-            return getFromRegistry(name, directiveRegistry);
-        }
-    };
-    renderer.invokeDirectiveFn = function(factory) {
-        return factory.call(null);
-    }, renderer.clearRegistry = function() {
-        return forEach(directiveRegistry, function(value, name) {
-            "$$get" !== name && delete directiveRegistry[name];
-        }), this;
-    }, renderer.hasDirective = function(name) {
-        return directiveRegistry.hasOwnProperty(name);
-    }, renderer.getDirectives = directiveRegistry.$$get, renderer.register = function(name, factory) {
-        return registerDirective(name, factory, directiveRegistry);
-    };
-    var expsCache = {}, _templateCache = {};
-    renderer.compile = function(node, transcludeFn, maxPriority) {
-        return compile(node, transcludeFn, maxPriority);
-    };
-    var instances = [], onDestroyQueue = [], beforeCompileQueue = [], afterCompileQueue = [];
-    extend(renderer, {
-        templateCache: templateCache,
-        parse: parse,
-        Scope: Scope,
-        instances: instances,
-        _registry: directiveRegistry,
-        onDestroyQueue: onDestroyQueue,
-        beforeCompileQueue: beforeCompileQueue,
-        afterCompileQueue: afterCompileQueue,
-        controller: function(ctor, scope, node, attributes, $transcludeFn) {
-            return new ctor(scope, node, attributes, $transcludeFn);
-        },
-        beforeCompile: function(fn) {
-            return beforeCompileQueue.unshift(fn), renderer;
-        },
-        afterCompile: function(fn) {
-            return afterCompileQueue.unshift(fn), renderer;
-        },
-        onDestroyRunningApp: function(fn) {
-            return onDestroyQueue.unshift(fn), renderer;
-        },
-        bootstrap: function(element) {
-            var i, args = [], instance = {}, rootElement = element, rootScope = new renderer.Scope(), bootstrapArgs = toArray(arguments);
-            for (args.push(rootScope), i = 0; i < bootstrapArgs.length; i++) args.push(bootstrapArgs[i]);
-            for (i = beforeCompileQueue.length - 1; i >= 0; i--) beforeCompileQueue[i].apply(instance, args);
-            rootElement instanceof Node == !0 ? instance.clonedElement = rootElement.cloneNode(1) : isObject(rootElement) && (instance.clonedElement = clone(rootElement));
-            var destroyQueue = [];
-            for (extend(instance, {
-                link: renderer.compile(rootElement),
-                rootScope: rootScope,
-                rootElement: rootElement,
-                onDestroy: function(fn) {
-                    return destroyQueue.unshift(fn), instance;
-                },
-                destroy: function() {
-                    var j;
-                    for (j = onDestroyQueue.length - 1; j >= 0; j--) onDestroyQueue[j](instance);
-                    for (j = destroyQueue.length - 1; j >= 0; j--) destroyQueue[j]();
+    function registerDirective(name, factory, registry) {
+        if (!registry.hasOwnProperty(name)) {
+            var directives = [];
+            registry[name] = {
+                directives: directives,
+                executed: !1,
+                load: function() {
+                    var data, options, instances = [];
+                    return forEach(directives, function(factory, index) {
+                        data = renderer.invokeDirectiveFn(factory), options = {}, isFunction(data) ? options.compile = lazy(data) : !data.compile && data.link ? options.compile = lazy(data.link) : data.compile || data.link || (data.compile = noop), 
+                        isObject(data) && extend(options, data), defaults(options, {
+                            priority: 0,
+                            index: index,
+                            name: name,
+                            type: "EA"
+                        }), defaults(options, {
+                            require: options.controller && options.name
+                        }), instances.push(options);
+                    }), instances;
                 }
-            }), instance.link(rootScope), i = afterCompileQueue.length - 1; i >= 0; i--) afterCompileQueue[i].apply(instance, args);
-            return instances.push(instance), instance;
+            };
         }
-    }), renderer.onDestroyRunningApp(function(instance) {
-        var i = instances.indexOf(instance);
-        i > -1 && instances.splice(i, 1);
-    }), global.renderer = renderer, renderer.prototype = {
-        __elementCache: {},
-        __cacheKey: "$$$rt339"
-    };
-    var elCache = renderer.prototype.__elementCache, cacheKey = renderer.prototype.__cacheKey;
+        registry[name].directives.push(factory);
+    }
+    function invokeDirectiveFn(factory) {
+        return factory.call(null);
+    }
+    function hasDirective(name) {
+        return registry.hasOwnProperty(name);
+    }
+    function clearRegistry() {
+        forEach(registry, function(value, name) {
+            "$$get" !== name && delete registry[name];
+        });
+    }
+    function register(name, factory) {
+        return registerDirective(name, factory, registry);
+    }
+    function parse(exp, cache) {
+        if ($expsCache.hasOwnProperty(exp) && cache !== !1) return $expsCache[exp];
+        var lexer = new Lexer(), parser = new Parser(lexer);
+        return $expsCache[exp] = parser.parse(exp);
+    }
+    function templateCache(path, value) {
+        if (isString(path)) {
+            if (!value) return $templateCache[path];
+            $templateCache[path] = value;
+        }
+        return null;
+    }
+    function controller(ctor, scope, node, attributes, $transcludeFn) {
+        return new ctor(scope, node, attributes, $transcludeFn);
+    }
+    function NodeLink(node, directives, attributes, context) {
+        this.node = node, this.links = {
+            post: [],
+            pre: []
+        }, this.scope = null, this.context = context || {}, this.attributes = attributes, 
+        this.directives = directives || [], this.transclude = null, this.terminalPriority = -Number.MAX_VALUE, 
+        this.node.nodeType === Node.TEXT_NODE && this.directives.push({
+            compile: function(node) {
+                return function(scope, node) {
+                    var interpolate = new Interpolate(node.nodeValue);
+                    scope.watchGroup(interpolate.exps, function() {
+                        node.nodeValue = interpolate.compile(scope);
+                    });
+                };
+            }
+        });
+    }
+    function Parser(lexer) {
+        this.lexer = lexer, this.ast = new AST(this.lexer), this.astCompiler = new ASTCompiler(this.ast);
+    }
+    var isArray = Array.isArray, EMPTY = "", START_SYMBOL = "{", END_SYMBOL = "}", slice = Array.prototype.slice, id = 0;
     EventEmitter.prototype = {
         on: function(name, listener) {
             return this._events.hasOwnProperty(name) || (this._events[name] = []), this._events[name].push(listener), 
@@ -656,6 +621,23 @@
             var i, j, jj, events, eventName, eventNames = Object.keys(this._events), ii = eventNames.length;
             for (i = 0; ii > i; i++) for (eventName = eventNames[i], events = this._events[eventName], 
             jj = events.length, j = 0; jj > j; j++) events.splice(j, 1);
+        }
+    }, Observer.prototype = {
+        deliverChangeRecords: function() {
+            var last, value, length, watcher, object = this.object, watchers = this.watchers;
+            for (length = watchers.length; length--; ) watcher = watchers[length], (value = watcher.get(object)) === (last = watcher.last) || isEqual(value, last) || (watcher.last = clone(value), 
+            watcher.fn(value, last));
+        },
+        watch: function(path, listener) {
+            var watcher = (this.object, {
+                last: void 0,
+                path: path,
+                get: function(object) {
+                    return get(object, path);
+                },
+                fn: listener
+            }), value = watcher.get();
+            watcher.fn(value, clone(watcher.last)), watcher.last = clone(value), this.watchers.unshift(watcher);
         }
     }, inherits(Watcher, EventEmitter, {
         deliverChangeRecords: function() {
@@ -1089,6 +1071,292 @@
                 type: AST.ThisExpression
             }
         }
+    }, Lexer.prototype = {
+        lex: function(text) {
+            this.index = 0, this.text = text, this.length = this.text.length, this._scanning = !1, 
+            this.tokens = [], this.curlyStack = [];
+            for (var ch; !this.eof(); ) ch = this.text.charCodeAt(this.index), this.isWhiteSpace(ch) ? ++this.index : this.isIdentifierStart(ch) ? this.scanIdentifier() : 40 === ch || 41 === ch || 59 === ch ? this.scanPunctuator() : 39 === ch || 34 === ch ? this.scanStringLiteral() : 46 === ch ? this.isDecimalDigit(this.text.charCodeAt(this.index + 1)) ? this.scanNumericLiteral() : this.scanPunctuator() : this.isDecimalDigit(ch) ? this.scanNumericLiteral() : 96 === ch || 125 === ch && "${" === this.curlyStack[this.curlyStack.length - 1] ? this.scanTemplate() : this.scanPunctuator();
+            return this.tokens;
+        },
+        throwUnexpectedToken: function() {
+            throw new Error("Column " + this.index + ": Unexpected token " + this.text[this.index]);
+        },
+        isDecimalDigit: function(ch) {
+            return ch >= 48 && 57 >= ch;
+        },
+        isIdentifierPart: function(ch) {
+            return Character.isIdentifierPart(ch);
+        },
+        isOctalDigit: function(cp) {
+            return cp >= 48 && 55 >= cp;
+        },
+        getIdentifier: function() {
+            for (var ch, start = this.index++; !this.eof(); ) {
+                if (ch = this.text.charCodeAt(this.index), 92 === ch) return this.index = start, 
+                this.getComplexIdentifier();
+                if (ch >= 55296 && 57343 > ch) return this.index = start, this.getComplexIdentifier();
+                if (!this.isIdentifierPart(ch)) break;
+                ++this.index;
+            }
+            return this.text.slice(start, this.index);
+        },
+        scanTemplate: function() {
+            var ch, cooked = "", terminated = !1, start = this.index, head = "`" === this.text[start], tail = !1, rawOffset = 2;
+            for (++this.index; !this.eof(); ) {
+                if (ch = this.text[this.index++], "`" === ch) {
+                    rawOffset = 1, tail = !0, terminated = !0;
+                    break;
+                }
+                if ("$" === ch) {
+                    if ("{" === this.text[this.index]) {
+                        this.curlyStack.push("${"), ++this.index, terminated = !0;
+                        break;
+                    }
+                    cooked += ch;
+                } else cooked += ch;
+            }
+            terminated || this.throwUnexpectedToken(), head || this.curlyStack.pop(), this.tokens.push({
+                type: Token.Template,
+                value: cooked,
+                start: start,
+                tail: tail,
+                head: head,
+                end: this.index
+            });
+        },
+        scanNumericLiteral: function() {
+            var ch;
+            ch = this.text[this.index], this.assert(this.isDecimalDigit(ch.charCodeAt(0)) || "." === ch, "Numeric literal must start with a decimal digit or a decimal point");
+            var start = this.index, number = "";
+            if ("." !== ch) {
+                if (number = this.text[this.index++], ch = this.text[this.index], "0" === number) {
+                    if ("x" === ch || "X" === ch) return ++this.index, this.scanHexLiteral(start);
+                    if ("b" === ch || "B" === ch) return ++this.index, this.scanBinaryLiteral(start);
+                    if ("o" === ch || "O" === ch) return this.scanOctalLiteral(ch, start);
+                    if (this.isOctalDigit(ch) && this.isImplicitOctalLiteral()) return this.scanOctalLiteral(ch, start);
+                }
+                for (;this.isDecimalDigit(this.text.charCodeAt(this.index)); ) number += this.text[this.index++];
+                ch = this.text[this.index];
+            }
+            if ("." === ch) {
+                for (number += this.text[this.index++]; this.isDecimalDigit(this.text.charCodeAt(this.index)); ) number += this.text[this.index++];
+                ch = this.text[this.index];
+            }
+            if ("e" === ch || "E" === ch) if (number += this.text[this.index++], ch = this.text[this.index], 
+            ("+" === ch || "-" === ch) && (number += this.text[this.index++]), this.isDecimalDigit(this.text.charCodeAt(this.index))) for (;this.isDecimalDigit(this.text.charCodeAt(this.index)); ) number += this.text[this.index++]; else this.throwUnexpectedToken();
+            this.isIdentifierPart(this.text.charCodeAt(this.index)) && this.throwUnexpectedToken(), 
+            this.tokens.push({
+                type: Token.NumericLiteral,
+                value: parseFloat(number),
+                start: start,
+                end: this.index
+            });
+        },
+        scanIdentifier: function() {
+            var id, type, start = this.index;
+            id = 92 === this.text.charCodeAt(this.index) ? this.getComplexIdentifier() : this.getIdentifier(), 
+            type = 1 === id.length ? Token.Identifier : "null" === id ? Token.NullLiteral : "true" === id || "false" === id ? Token.BooleanLiteral : Token.Identifier, 
+            this.tokens.push({
+                type: type,
+                value: id,
+                start: start,
+                end: this.index
+            });
+        },
+        assert: function(condition, message) {
+            if (!condition) throw new Error("ASSERT: " + message);
+        },
+        eof: function() {
+            return this.index >= this.length;
+        },
+        isWhiteSpace: function(ch) {
+            return Character.isWhiteSpace(ch);
+        },
+        isIdentifierStart: function(ch) {
+            return Character.isIdentifierStart(ch);
+        },
+        scanPunctuator: function() {
+            var token = {
+                type: Token.Punctuator,
+                value: "",
+                start: this.index,
+                end: this.index
+            }, str = this.text[this.index];
+            switch (str) {
+              case "{":
+                "{" === str && this.curlyStack.push(str), ++this.index;
+                break;
+
+              case "}":
+                ++this.index, this.curlyStack.pop();
+                break;
+
+              case ".":
+                ++this.index, "." === this.text[this.index] && "." === this.text[this.index + 1] && (this.index += 2, 
+                str = "...");
+                break;
+
+              case "(":
+              case ")":
+              case ";":
+              case ",":
+              case "[":
+              case "]":
+              case ":":
+              case "?":
+              case "~":
+                ++this.index;
+                break;
+
+              default:
+                str = this.text.substr(this.index, 4), ">>>=" === str ? this.index += 4 : (str = str.substr(0, 3), 
+                "===" === str || "!==" === str || ">>>" === str || "<<=" === str || ">>=" === str ? this.index += 3 : (str = str.substr(0, 2), 
+                "&&" === str || "||" === str || "==" === str || "!=" === str || "+=" === str || "-=" === str || "*=" === str || "/=" === str || "++" === str || "--" === str || "<<" === str || ">>" === str || "&=" === str || "|=" === str || "^=" === str || "%=" === str || "<=" === str || ">=" === str || "=>" === str ? this.index += 2 : (str = this.text[this.index], 
+                "<>=!+-*%&|^/".indexOf(str) >= 0 && ++this.index)));
+            }
+            this.index === token.start && this.throwUnexpectedToken(), token.end = this.index, 
+            token.value = str, this.tokens.push(token);
+        },
+        scanStringLiteral: function() {
+            var start = this.index, quote = this.text[start];
+            this.assert("'" === quote || '"' === quote, "String literal must starts with a quote"), 
+            ++this.index;
+            for (var ch, octal = !1, str = ""; !this.eof(); ) {
+                if (ch = this.text[this.index++], ch === quote) {
+                    quote = "";
+                    break;
+                }
+                str += ch;
+            }
+            "" !== quote && this.throwUnexpectedToken(), this.tokens.push({
+                type: Token.StringLiteral,
+                value: str,
+                octal: octal,
+                start: start,
+                end: this.index
+            });
+        },
+        scanning: function(value) {
+            return this._scanning = value || !this._scanning, this;
+        }
+    }, Grammar.prototype = {
+        nextId: function(skip, init) {
+            var id = "v" + this.nextId_++;
+            return skip || this.current().vars.push(id + (init ? "=" + init : "")), id;
+        },
+        assign: function(id, value) {
+            return id ? (this.current().body.push(id, "=", value, ";"), id) : void 0;
+        },
+        setCurrent: function(name) {
+            return this.state.hasOwnProperty(name) || this.createSection(name), this.current_ = name, 
+            this;
+        },
+        createSection: function(name) {
+            return this.state[name] = {
+                body: [],
+                vars: [],
+                own: {},
+                nextId: 0
+            }, this;
+        },
+        body: function(section) {
+            return this.state[section].body.join("");
+        },
+        current: function() {
+            return this.state[this.current_];
+        },
+        varsPrefix: function(section) {
+            return this.state[section].vars.length ? "var " + this.state[section].vars.join(",") + ";" : "";
+        },
+        exec: function(fn) {
+            var args = toArray(arguments).slice(1);
+            return fn.apply(this, args), this;
+        },
+        nonComputedMember: function(left, right) {
+            return left + "." + right;
+        },
+        computedMember: function(left, right) {
+            return left + "[" + right + "]";
+        },
+        member: function(left, right, computed) {
+            return computed ? this.computedMember(left, right) : this.nonComputedMember(left, right);
+        },
+        not: function(expression) {
+            return "!" + this.block(expression);
+        },
+        notNull: function(expression) {
+            return expression + "!=null";
+        },
+        ifNot: function(expression, alternate, consequent) {
+            return this.if_(this.not(expression), alternate, consequent);
+        },
+        ifNotNull: function(expression, alternate, consequent) {
+            return this.if_(this.notNull(expression), alternate, consequent), this;
+        },
+        ifIsDefined: function(variable, alternate, consequent) {
+            return this.if_(this.join(this.notNull(variable), "&&"), alternate, consequent);
+        },
+        if_: function(test, alternate, consequent) {
+            var body = this.current().body;
+            body.push("if(", test, "){"), this.exec(alternate, test), body.push("}"), consequent && (body.push("else{"), 
+            this.exec(consequent, test), body.push("}"));
+        },
+        return_: function(id) {
+            this.current().body.push("return ", id, ";");
+        },
+        escape: function(string) {
+            return escape(string);
+        },
+        join: function() {
+            var args = toArray(arguments), del = args.slice(-1)[0];
+            return args.slice(0, args.length - 1).join(del);
+        },
+        getHasOwnProperty: function(element, property) {
+            var key = element + "." + property, own = this.current().own;
+            return own.hasOwnProperty(key) || (own[key] = this.nextId(!1, this.join(element, this.block(this.member(element, this.execute("hasOwnProperty", '"' + this.escape(property) + '"'))), "&&"))), 
+            own[key];
+        },
+        block: function(exp, stCh, enCh) {
+            return stCh = stCh || "(", enCh = enCh || ")", stCh + exp + enCh;
+        },
+        execute: function(name) {
+            var args = toArray(arguments).slice(1);
+            return 1 === args.length && isArray(args[0]) && (args = args[0]), name + this.block(args.join(","));
+        },
+        plus: function(left, right) {
+            return this.execute("plus", left, right);
+        },
+        ifDefined: function(id, defaultValue) {
+            return this.execute("ifDefined", id, this.escape(defaultValue));
+        },
+        ifIsUndefined: function(id) {
+            return this.execute("isUndefined", id);
+        },
+        generateFunction: function(name, params) {
+            return params || (params = ""), "function(" + params + "){" + this.varsPrefix(name) + this.body(name) + "}";
+        },
+        id: function(id, skip, init) {
+            return id || this.nextId(skip, init);
+        },
+        lazyAssign: function(id, value) {
+            var self = this;
+            return function() {
+                self.assign(id, value);
+            };
+        },
+        push: function() {
+            var args = toArray(arguments), body = this.current().body;
+            return body.push.apply(body, args);
+        },
+        getAsString: function(value) {
+            return '"' + (value || "") + '"';
+        },
+        clear: function(name) {
+            var grammar = this;
+            return name ? (this.state.hasOwnProperty(name) && delete this.state[name], void this.setCurrent(name)) : (forEach(this.state, function(state, name) {
+                grammar.clear(name);
+            }), this);
+        }
     }, ASTCompiler.prototype = {
         assignableAST: function(ast) {
             return 1 === ast.body.length && isAssignable(ast.body[0].expression) ? {
@@ -1412,7 +1680,7 @@
                 throw new Error("there is no statement for " + ast.type);
             }
         }
-    }, Attributes.prototype = {
+    }, interpolate.startSymbol = "{{", interpolate.endSymbol = "}}", Attributes.prototype = {
         $set: function(name, value) {
             this[name] = value;
             var attrName = this.$$normalize(name);
@@ -1447,293 +1715,42 @@
             }
             return !1;
         }
-    }, Grammar.prototype = {
-        nextId: function(skip, init) {
-            var id = "v" + this.nextId_++;
-            return skip || this.current().vars.push(id + (init ? "=" + init : "")), id;
-        },
-        assign: function(id, value) {
-            return id ? (this.current().body.push(id, "=", value, ";"), id) : void 0;
-        },
-        setCurrent: function(name) {
-            return this.state.hasOwnProperty(name) || this.createSection(name), this.current_ = name, 
-            this;
-        },
-        createSection: function(name) {
-            return this.state[name] = {
-                body: [],
-                vars: [],
-                own: {},
-                nextId: 0
-            }, this;
-        },
-        body: function(section) {
-            return this.state[section].body.join("");
-        },
-        current: function() {
-            return this.state[this.current_];
-        },
-        varsPrefix: function(section) {
-            return this.state[section].vars.length ? "var " + this.state[section].vars.join(",") + ";" : "";
-        },
-        exec: function(fn) {
-            var args = toArray(arguments).slice(1);
-            return fn.apply(this, args), this;
-        },
-        nonComputedMember: function(left, right) {
-            return left + "." + right;
-        },
-        computedMember: function(left, right) {
-            return left + "[" + right + "]";
-        },
-        member: function(left, right, computed) {
-            return computed ? this.computedMember(left, right) : this.nonComputedMember(left, right);
-        },
-        not: function(expression) {
-            return "!" + this.block(expression);
-        },
-        notNull: function(expression) {
-            return expression + "!=null";
-        },
-        ifNot: function(expression, alternate, consequent) {
-            return this.if_(this.not(expression), alternate, consequent);
-        },
-        ifNotNull: function(expression, alternate, consequent) {
-            return this.if_(this.notNull(expression), alternate, consequent), this;
-        },
-        ifIsDefined: function(variable, alternate, consequent) {
-            return this.if_(this.join(this.notNull(variable), "&&"), alternate, consequent);
-        },
-        if_: function(test, alternate, consequent) {
-            var body = this.current().body;
-            body.push("if(", test, "){"), this.exec(alternate, test), body.push("}"), consequent && (body.push("else{"), 
-            this.exec(consequent, test), body.push("}"));
-        },
-        return_: function(id) {
-            this.current().body.push("return ", id, ";");
-        },
-        escape: function(string) {
-            return escape(string);
-        },
-        join: function() {
-            var args = toArray(arguments), del = args.slice(-1)[0];
-            return args.slice(0, args.length - 1).join(del);
-        },
-        getHasOwnProperty: function(element, property) {
-            var key = element + "." + property, own = this.current().own;
-            return own.hasOwnProperty(key) || (own[key] = this.nextId(!1, this.join(element, this.block(this.member(element, this.execute("hasOwnProperty", '"' + this.escape(property) + '"'))), "&&"))), 
-            own[key];
-        },
-        block: function(exp, stCh, enCh) {
-            return stCh = stCh || "(", enCh = enCh || ")", stCh + exp + enCh;
-        },
-        execute: function(name) {
-            var args = toArray(arguments).slice(1);
-            return 1 === args.length && isArray(args[0]) && (args = args[0]), name + this.block(args.join(","));
-        },
-        plus: function(left, right) {
-            return this.execute("plus", left, right);
-        },
-        ifDefined: function(id, defaultValue) {
-            return this.execute("ifDefined", id, this.escape(defaultValue));
-        },
-        ifIsUndefined: function(id) {
-            return this.execute("isUndefined", id);
-        },
-        generateFunction: function(name, params) {
-            return params || (params = ""), "function(" + params + "){" + this.varsPrefix(name) + this.body(name) + "}";
-        },
-        id: function(id, skip, init) {
-            return id || this.nextId(skip, init);
-        },
-        lazyAssign: function(id, value) {
-            var self = this;
-            return function() {
-                self.assign(id, value);
-            };
-        },
-        push: function() {
-            var args = toArray(arguments), body = this.current().body;
-            return body.push.apply(body, args);
-        },
-        getAsString: function(value) {
-            return '"' + (value || "") + '"';
-        },
-        clear: function(name) {
-            var grammar = this;
-            return name ? (this.state.hasOwnProperty(name) && delete this.state[name], void this.setCurrent(name)) : (forEach(this.state, function(state, name) {
-                grammar.clear(name);
-            }), this);
+    };
+    var elCache, cacheKey, registry = {
+        $$get: function(name) {
+            return getFromRegistry(name, registry);
         }
-    }, Lexer.prototype = {
-        lex: function(text) {
-            this.index = 0, this.text = text, this.length = this.text.length, this._scanning = !1, 
-            this.tokens = [], this.curlyStack = [];
-            for (var ch; !this.eof(); ) ch = this.text.charCodeAt(this.index), this.isWhiteSpace(ch) ? ++this.index : this.isIdentifierStart(ch) ? this.scanIdentifier() : 40 === ch || 41 === ch || 59 === ch ? this.scanPunctuator() : 39 === ch || 34 === ch ? this.scanStringLiteral() : 46 === ch ? this.isDecimalDigit(this.text.charCodeAt(this.index + 1)) ? this.scanNumericLiteral() : this.scanPunctuator() : this.isDecimalDigit(ch) ? this.scanNumericLiteral() : 96 === ch || 125 === ch && "${" === this.curlyStack[this.curlyStack.length - 1] ? this.scanTemplate() : this.scanPunctuator();
-            return this.tokens;
-        },
-        throwUnexpectedToken: function() {
-            throw new Error("Column " + this.index + ": Unexpected token " + this.text[this.index]);
-        },
-        isDecimalDigit: function(ch) {
-            return ch >= 48 && 57 >= ch;
-        },
-        isIdentifierPart: function(ch) {
-            return Character.isIdentifierPart(ch);
-        },
-        isOctalDigit: function(cp) {
-            return cp >= 48 && 55 >= cp;
-        },
-        getIdentifier: function() {
-            for (var ch, start = this.index++; !this.eof(); ) {
-                if (ch = this.text.charCodeAt(this.index), 92 === ch) return this.index = start, 
-                this.getComplexIdentifier();
-                if (ch >= 55296 && 57343 > ch) return this.index = start, this.getComplexIdentifier();
-                if (!this.isIdentifierPart(ch)) break;
-                ++this.index;
-            }
-            return this.text.slice(start, this.index);
-        },
-        scanTemplate: function() {
-            var ch, cooked = "", terminated = !1, start = this.index, head = "`" === this.text[start], tail = !1, rawOffset = 2;
-            for (++this.index; !this.eof(); ) {
-                if (ch = this.text[this.index++], "`" === ch) {
-                    rawOffset = 1, tail = !0, terminated = !0;
-                    break;
-                }
-                if ("$" === ch) {
-                    if ("{" === this.text[this.index]) {
-                        this.curlyStack.push("${"), ++this.index, terminated = !0;
-                        break;
-                    }
-                    cooked += ch;
-                } else cooked += ch;
-            }
-            terminated || this.throwUnexpectedToken(), head || this.curlyStack.pop(), this.tokens.push({
-                type: Token.Template,
-                value: cooked,
-                start: start,
-                tail: tail,
-                head: head,
-                end: this.index
-            });
-        },
-        scanNumericLiteral: function() {
-            var ch;
-            ch = this.text[this.index], this.assert(this.isDecimalDigit(ch.charCodeAt(0)) || "." === ch, "Numeric literal must start with a decimal digit or a decimal point");
-            var start = this.index, number = "";
-            if ("." !== ch) {
-                if (number = this.text[this.index++], ch = this.text[this.index], "0" === number) {
-                    if ("x" === ch || "X" === ch) return ++this.index, this.scanHexLiteral(start);
-                    if ("b" === ch || "B" === ch) return ++this.index, this.scanBinaryLiteral(start);
-                    if ("o" === ch || "O" === ch) return this.scanOctalLiteral(ch, start);
-                    if (this.isOctalDigit(ch) && this.isImplicitOctalLiteral()) return this.scanOctalLiteral(ch, start);
-                }
-                for (;this.isDecimalDigit(this.text.charCodeAt(this.index)); ) number += this.text[this.index++];
-                ch = this.text[this.index];
-            }
-            if ("." === ch) {
-                for (number += this.text[this.index++]; this.isDecimalDigit(this.text.charCodeAt(this.index)); ) number += this.text[this.index++];
-                ch = this.text[this.index];
-            }
-            if ("e" === ch || "E" === ch) if (number += this.text[this.index++], ch = this.text[this.index], 
-            ("+" === ch || "-" === ch) && (number += this.text[this.index++]), this.isDecimalDigit(this.text.charCodeAt(this.index))) for (;this.isDecimalDigit(this.text.charCodeAt(this.index)); ) number += this.text[this.index++]; else this.throwUnexpectedToken();
-            this.isIdentifierPart(this.text.charCodeAt(this.index)) && this.throwUnexpectedToken(), 
-            this.tokens.push({
-                type: Token.NumericLiteral,
-                value: parseFloat(number),
-                start: start,
-                end: this.index
-            });
-        },
-        scanIdentifier: function() {
-            var id, type, start = this.index;
-            id = 92 === this.text.charCodeAt(this.index) ? this.getComplexIdentifier() : this.getIdentifier(), 
-            type = 1 === id.length ? Token.Identifier : "null" === id ? Token.NullLiteral : "true" === id || "false" === id ? Token.BooleanLiteral : Token.Identifier, 
-            this.tokens.push({
-                type: type,
-                value: id,
-                start: start,
-                end: this.index
-            });
-        },
-        assert: function(condition, message) {
-            if (!condition) throw new Error("ASSERT: " + message);
-        },
-        eof: function() {
-            return this.index >= this.length;
-        },
-        isWhiteSpace: function(ch) {
-            return Character.isWhiteSpace(ch);
-        },
-        isIdentifierStart: function(ch) {
-            return Character.isIdentifierStart(ch);
-        },
-        scanPunctuator: function() {
-            var token = {
-                type: Token.Punctuator,
-                value: "",
-                start: this.index,
-                end: this.index
-            }, str = this.text[this.index];
-            switch (str) {
-              case "{":
-                "{" === str && this.curlyStack.push(str), ++this.index;
-                break;
-
-              case "}":
-                ++this.index, this.curlyStack.pop();
-                break;
-
-              case ".":
-                ++this.index, "." === this.text[this.index] && "." === this.text[this.index + 1] && (this.index += 2, 
-                str = "...");
-                break;
-
-              case "(":
-              case ")":
-              case ";":
-              case ",":
-              case "[":
-              case "]":
-              case ":":
-              case "?":
-              case "~":
-                ++this.index;
-                break;
-
-              default:
-                str = this.text.substr(this.index, 4), ">>>=" === str ? this.index += 4 : (str = str.substr(0, 3), 
-                "===" === str || "!==" === str || ">>>" === str || "<<=" === str || ">>=" === str ? this.index += 3 : (str = str.substr(0, 2), 
-                "&&" === str || "||" === str || "==" === str || "!=" === str || "+=" === str || "-=" === str || "*=" === str || "/=" === str || "++" === str || "--" === str || "<<" === str || ">>" === str || "&=" === str || "|=" === str || "^=" === str || "%=" === str || "<=" === str || ">=" === str || "=>" === str ? this.index += 2 : (str = this.text[this.index], 
-                "<>=!+-*%&|^/".indexOf(str) >= 0 && ++this.index)));
-            }
-            this.index === token.start && this.throwUnexpectedToken(), token.end = this.index, 
-            token.value = str, this.tokens.push(token);
-        },
-        scanStringLiteral: function() {
-            var start = this.index, quote = this.text[start];
-            this.assert("'" === quote || '"' === quote, "String literal must starts with a quote"), 
-            ++this.index;
-            for (var ch, octal = !1, str = ""; !this.eof(); ) {
-                if (ch = this.text[this.index++], ch === quote) {
-                    quote = "";
-                    break;
-                }
-                str += ch;
-            }
-            "" !== quote && this.throwUnexpectedToken(), this.tokens.push({
-                type: Token.StringLiteral,
-                value: str,
-                octal: octal,
-                start: start,
-                end: this.index
-            });
-        },
-        scanning: function(value) {
-            return this._scanning = value || !this._scanning, this;
-        }
-    }, extend(NodeLink, {
+    }, REQUIRE_PREFIX_REGEXP = /^(?:(\^\^?)?(\?)?(\^\^?)?)?/, SCOPE_ISOLATED = 1, SCOPE_CHILD = 2, MULTI_ELEMENT_DIR_RE = /^(.+)Start$/, renderer = {}, $expsCache = {}, $templateCache = {};
+    renderer.prototype = {
+        $$elementCache: {},
+        $$cacheKey: "nd339"
+    }, elCache = renderer.prototype.$$elementCache, cacheKey = renderer.prototype.$$cacheKey, 
+    extend(renderer, {
+        scan: scan,
+        scope: new Scope(),
+        apply: apply,
+        compile: compile,
+        compileNodes: compileNodes,
+        interpolate: interpolate,
+        templateCache: templateCache,
+        parse: parse,
+        AST: AST,
+        ASTFinder: ASTFinder,
+        ASTCompiler: ASTCompiler,
+        Lexer: Lexer,
+        Scope: Scope,
+        Grammar: Grammar,
+        Watcher: Watcher,
+        Attributes: Attributes,
+        EventEmitter: EventEmitter,
+        registry: registry,
+        controller: controller,
+        invokeDirectiveFn: invokeDirectiveFn,
+        clearRegistry: clearRegistry,
+        hasDirective: hasDirective,
+        getDirectives: registry.$$get,
+        register: register
+    }), extend(NodeLink, {
         SCOPE_CHILD: 1,
         SCOPE_ISOLATED: 2
     }), NodeLink.prototype = {
@@ -1864,29 +1881,10 @@
                 extend(value, directiveData), links.hasOwnProperty(key) && links[key].push(value);
             }) : isFunction(link) && (extend(link, directiveData), links.post.push(link));
         }
-    }, Observer.prototype = {
-        deliverChangeRecords: function() {
-            var last, value, length, watcher, object = this.object, watchers = this.watchers;
-            for (length = watchers.length; length--; ) watcher = watchers[length], (value = watcher.get(object)) === (last = watcher.last) || isEqual(value, last) || (watcher.last = clone(value), 
-            watcher.fn(value, last));
-        },
-        watch: function(path, listener) {
-            var watcher = (this.object, {
-                last: void 0,
-                path: path,
-                get: function(object) {
-                    return get(object, path);
-                },
-                fn: listener
-            }), value = watcher.get();
-            watcher.fn(value, clone(watcher.last)), watcher.last = clone(value), this.watchers.unshift(watcher);
-        }
     }, Parser.prototype = {
         constructor: Parser,
         parse: function(text) {
             return this.astCompiler.compile(text);
         }
     };
-    var registry = directiveRegistry, REQUIRE_PREFIX_REGEXP = /^(?:(\^\^?)?(\?)?(\^\^?)?)?/, SCOPE_ISOLATED = 1, SCOPE_CHILD = 2, MULTI_ELEMENT_DIR_RE = /^(.+)Start$/;
-    interpolate.startSymbol = "{{", interpolate.endSymbol = "}}";
 }(window);
