@@ -1,4 +1,4 @@
-interpolate.startSymbol = '{{',
+interpolate.startSymbol = '{{';
 interpolate.endSymbol = '}}';
 
 function interpolate(text, options) {
