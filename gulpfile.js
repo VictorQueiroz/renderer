@@ -27,7 +27,7 @@ gulp.task('build', function() {
 	gulp.src(SCRIPTS).pipe(concat('renderer.js'))
 	.pipe(wrapper({
 		header: '(function(global) { "use strict"; ',
-		footer: '}(window));'
+		footer: 'global.renderer = renderer; }(window));'
 	}))
   .pipe(uglify({
     mangle: false,

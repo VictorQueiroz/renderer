@@ -1886,5 +1886,5 @@
         parse: function(text) {
             return this.astCompiler.compile(text);
         }
-    };
+    }, global.renderer = renderer;
 }(window);
