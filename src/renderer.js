@@ -11,11 +11,15 @@ renderer.prototype = {
   $$cacheKey: 'nd339'
 };
 
-elCache = renderer.prototype.$$elementCache,
+elCache = renderer.prototype.$$elementCache;
 cacheKey = renderer.prototype.$$cacheKey;
 
 extend(renderer, {
+  scan: scan,
+  scope: new Scope(),
+  apply: apply,
   compile: compile,
+  compileNodes: compileNodes,
   interpolate: interpolate,
   templateCache: templateCache,
   parse: parse,
@@ -34,7 +38,7 @@ extend(renderer, {
   clearRegistry: clearRegistry,
   hasDirective: hasDirective,
   getDirectives: registry.$$get,
-  register: register,
+  register: register
 });
 
 function registerDirective(name, factory, registry) {

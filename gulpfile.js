@@ -4,18 +4,27 @@ var uglify = require('gulp-uglify');
 var jshint = require('gulp-jshint');
 var wrapper = require('gulp-wrapper');
 
+const SCRIPTS = [
+  'src/helpers.js',
+  'src/EventEmitter.js',
+  'src/Observer.js',
+  'src/Watcher.js',
+  'src/Scope.js',
+  'src/AST.js',
+  'src/Lexer.js',
+  'src/Grammar.js',
+  'src/ASTCompiler.js',
+  'src/ASTFinder.js',
+  'src/interpolate.js',
+  'src/Attributes.js',
+  'src/compile.js',
+  'src/renderer.js',
+  'src/Scanner.js',
+  'src/**/*.js',
+];
+
 gulp.task('build', function() {
-	gulp.src([
-		'src/helpers.js',
-		'src/renderer.js',
-		'src/EventEmitter.js',
-		'src/Watcher.js',
-		'src/Scope.js',
-		'src/Compile.js',
-		'src/Scanner.js',
-		'src/**/*.js'
-	])
-	.pipe(concat('renderer.js'))
+	gulp.src(SCRIPTS).pipe(concat('renderer.js'))
 	.pipe(wrapper({
 		header: '(function(global) { "use strict"; ',
 		footer: '}(window));'

@@ -320,7 +320,7 @@ function omit(object, keys) {
 }
 
 function extend (target) {
-  if(!target) target = {};
+  if(typeof target === 'undefined') target = {};
 
   var sources = toArray(arguments).slice(1).filter(isDefined);
 
@@ -351,15 +351,17 @@ function extend (target) {
 }
 
 function defaults (object, source) {
-  var keys = Object.keys(source);
-  var i, ii = keys.length, key, value;
+  if(isObject(object)) {
+    var keys = Object.keys(source);
+    var i, ii = keys.length, key, value;
 
-  for(i = 0; i < ii; i++) {
-    key     = keys[i];
-    value   = source[key];
+    for(i = 0; i < ii; i++) {
+      key     = keys[i];
+      value   = source[key];
 
-    if(!object.hasOwnProperty(key)) {
-      object[key] = value;
+      if(!object.hasOwnProperty(key)) {
+        object[key] = value;
+      }
     }
   }
 }
@@ -452,9 +454,7 @@ function bind(fn, context) {
   var args = arguments.length > 2 ? toArray(arguments).slice(2) : [];
 
   return function() {
-    return arguments.length
-      ? fn.apply(context, concat(args, arguments, 0))
-      : fn.apply(context, args);
+    return arguments.length ? fn.apply(context, concat(args, arguments, 0)) : fn.apply(context, args);
   };
 }
 

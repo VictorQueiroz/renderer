@@ -177,6 +177,32 @@ function groupScan(node, attrStart, attrEnd) {
   return nodes;
 }
 
+function parseElementSelectors(slots, filledSlots, slotMap) {
+  var optional;
+
+  return function(slotName, elementSelector) {
+    optional = (elementSelector.charAt(0) === '?');
+    elementSelector = optional ? elementSelector.substring(1) : elementSelector;
+
+    slotMap[elementSelector] = slotName;
+
+    // We explicitly assign `null` since this implies that a slot was defined but not filled.
+    // Later when calling boundTransclusion functions with a slot name we only error if the
+    // slot is `undefined`
+    slots[slotName] = null;
+
+    // filledSlots contains `true` for all slots that are either optional or have been
+    // filled. This is used to check that we have not missed any required slots
+    filledSlots[slotName] = optional;
+  };
+}
+
+function isSlotFilled(filled, slotName) {
+  if(!filled) {
+    throw new Error('Required transclusion slot `' + slotName + '` was not filled.');
+  }
+}
+
 var SCOPE_ISOLATED = 1,
     SCOPE_CHILD = 2;
 
@@ -208,9 +234,9 @@ function apply(directives, node, attributes, transcludeFn) {
       attrEnd;
 
   for(i = 0, ii = directives.length; i < ii; i++) {
-    directive = directives[i],
-    directiveName = directive.name,
-    attrStart = directive.$$start,
+    directive = directives[i];
+    directiveName = directive.name;
+    attrStart = directive.$$start;
     attrEnd = directive.$$end;
 
     // collect multiblock sections
@@ -222,7 +248,7 @@ function apply(directives, node, attributes, transcludeFn) {
       break; // prevent further processing of directives
     }
 
-    if(directiveValue = directive.scope) {
+    if((directiveValue = directive.scope)) {
       // This directive is trying to add an isolated scope.
       // Check that there is no scope of any kind already
       if(isObject(directiveValue)) {
@@ -241,7 +267,7 @@ function apply(directives, node, attributes, transcludeFn) {
       }
     }
 
-    if(directiveValue = directive.transclude) {
+    if((directiveValue = directive.transclude)) {
       if(directiveValue == 'element') {
         terminalPriority = directive.priority;
 
@@ -252,12 +278,13 @@ function apply(directives, node, attributes, transcludeFn) {
 
         childTranscludeFn = compile(template, transcludeFn, terminalPriority);
       } else {
-        var slots = Object.create(null);
+        var j,
+            slots = Object.create(null);
 
         template = new Array(node.childNodes.length);
 
-        for(var i = 0; i < template.length; i++) {
-          template[i] = node.childNodes[i];
+        for(j = 0; j < template.length; j++) {
+          template[j] = node.childNodes[j];
         }
 
         if(isObject(directiveValue)) {
@@ -269,30 +296,17 @@ function apply(directives, node, attributes, transcludeFn) {
               filledSlots = Object.create(null);
 
           // Parse the element selectors
-          forEach(directiveValue, function(slotName, elementSelector) {
-            var optional = (elementSelector.charAt(0) === '?');
-            elementSelector = optional ? elementSelector.substring(1) : elementSelector;
-
-            slotMap[elementSelector] = slotName;
-
-            // We explicitly assign `null` since this implies that a slot was defined but not filled.
-            // Later when calling boundTransclusion functions with a slot name we only error if the
-            // slot is `undefined`
-            slots[slotName] = null;
-
-            // filledSlots contains `true` for all slots that are either optional or have been
-            // filled. This is used to check that we have not missed any required slots
-            filledSlots[slotName] = optional;
-          });
+          forEach(directiveValue, parseElementSelectors(slots, filledSlots, slotMap));
 
           var $node,
               slotName,
               nodeList = node.childNodes;
 
           // Add the matching elements into their slot
-          for(var i = 0; i < nodeList.length; i++) {
-            $node = nodeList[i],
-            slotName = slotMap[camelCase($node.tagName)];
+          for(j = 0; j < nodeList.length; j++) {
+            $node = nodeList[j];
+            slotName = camelCase($node.tagName);
+            slotName = slotMap[slotName];
 
             if(slotName) {
               filledSlots[slotName] = true;
@@ -303,13 +317,9 @@ function apply(directives, node, attributes, transcludeFn) {
             }
           }
 
-          forEach(filledSlots, function(filled, slotName) {
-            if(!filled) {
-              throw new Error('Required transclusion slot `' + slotName + '` was not filled.');
-            }
-          });
+          forEach(filledSlots, isSlotFilled);
 
-          for (var slotName in slots) {
+          for (slotName in slots) {
             if (slots[slotName]) {
               // Only define a transclusion function if the slot was filled
               slots[slotName] = compile(slots[slotName], transcludeFn);
@@ -323,7 +333,7 @@ function apply(directives, node, attributes, transcludeFn) {
       }
     }
 
-    if(directiveValue = directive.template) {
+    if((directiveValue = directive.template)) {
       node.innerHTML = directiveValue;
     } else if (directive.transclude && directive.transclude !== 'element') {
       node.innerHTML = '';
@@ -478,8 +488,7 @@ function apply(directives, node, attributes, transcludeFn) {
 function directiveBindings(scope, dest, bindings, attrs) {
   var i = 0,
       bindingsKeys = Object.keys(bindings),
-      ii = bindingsKeys.length,
-      mode;
+      ii = bindingsKeys.length;
 
   forEach(bindings, function(mode, key) {
     var attrName,
@@ -550,13 +559,14 @@ function directiveBindings(scope, dest, bindings, attrs) {
 }
 
 function setupControllers(directives, controllers, scope, node, attributes, $transcludeFn) {
-  var ctor,
+  var name,
+      ctor,
       dataName,
       directive;
 
-  for(var name in directives) {
-    dataName = '$' + name + 'Controller',
-    directive = directives[name],
+  for(name in directives) {
+    dataName = '$' + name + 'Controller';
+    directive = directives[name];
     ctor = directive.controller;
 
     if(controllers[name]) {
@@ -697,7 +707,7 @@ function scan(node, directives, attributes, maxPriority) {
 
   switch(node.nodeType) {
     case Node.ELEMENT_NODE: /* Element */
-      name = camelCase(node.tagName),
+      name = camelCase(node.tagName);
       attrs = node.attributes;
 
       // Element tag name
@@ -708,10 +718,10 @@ function scan(node, directives, attributes, maxPriority) {
           attrEndName;
 
       for(i = 0, ii = attrs.length; i < ii; i++) {
-        attr = attrs[i],
-        value = trim(attr.value),
-        nodeAttrName = attr.name,
-        attrStartName = false,
+        attr = attrs[i];
+        value = trim(attr.value);
+        nodeAttrName = attr.name;
+        attrStartName = false;
         attrEndName = false;
 
         var multiElementMatch = camelCase(nodeAttrName).match(MULTI_ELEMENT_DIR_RE);
@@ -758,7 +768,7 @@ function compileNodes(nodeList, transcludeFn, maxPriority) {
       attributes;
 
   for(i = 0; i < nodeList.length; i++) {
-    directives = [],
+    directives = [];
     attributes = new Attributes(nodeList[i]);
 
     scan(nodeList[i], directives, attributes, i === 0 ? maxPriority : undefined);
