@@ -377,6 +377,36 @@ function apply(directives, node, attributes, transcludeFn) {
 
   return nodeLinkFn;
 
+  function createScopeBoundTranscludeFn(transcludeFn) {
+    if(!transcludeFn) {
+      throw new Error('transcludeFn() does not exists');
+    } else if (transcludeFn.hasOwnProperty('scope')) {
+      throw new Error('You cannot rebound a scopeBoundTranscludeFn()');
+    }
+
+    // bound the transcludeFn to the above passed scope, so we didn't have
+    // to pass the scope as we should in a naked transclude function
+    function scopeBoundTranscludeFn ($scope, cloneAttachFn, slotName) {
+      if(isFunction($scope)) {
+        slotName = cloneAttachFn;
+        cloneAttachFn = $scope;
+        $scope = scopeBoundTranscludeFn.scope;
+      }
+
+      if(slotName) {
+        var slotTranscludeFn = transcludeFn.slots[slotName];
+
+        if(slotTranscludeFn) {
+          return slotTranscludeFn($scope, cloneAttachFn);
+        }
+      } else {
+        transcludeFn($scope, cloneAttachFn);
+      }
+    }
+
+    return scopeBoundTranscludeFn;
+  }
+
   /**
    *  - Executes the pre and post linking functions
    */
@@ -385,7 +415,7 @@ function apply(directives, node, attributes, transcludeFn) {
         linkFn,
         newScope,
         controllers = nodeLinkFn.controllers,
-        $transcludeFn = (transcludeFn ? scopeBoundTranscludeFn : undefined);
+        $transcludeFn;
 
     switch(nodeLinkFn.scopeType) {
       case SCOPE_CHILD:
@@ -397,6 +427,12 @@ function apply(directives, node, attributes, transcludeFn) {
         break;
       default:
         newScope = scope;
+    }
+
+    $transcludeFn = (transcludeFn && !transcludeFn.hasOwnProperty('scope')) ? createScopeBoundTranscludeFn(transcludeFn) : transcludeFn;
+
+    if($transcludeFn && !($transcludeFn.scope)) {
+      extend($transcludeFn, { scope: newScope ? scope.parentScope : scope });
     }
 
     // instantiate all the directives controllers on this node link function
@@ -421,7 +457,7 @@ function apply(directives, node, attributes, transcludeFn) {
         childScope = newScope;
       }
 
-      childLinkFn(childScope, node.childNodes);
+      childLinkFn(childScope, node.childNodes, $transcludeFn);
     }
 
     for(i = postLinkFns.length - 1; i >= 0; i--) {
@@ -434,27 +470,7 @@ function apply(directives, node, attributes, transcludeFn) {
         $transcludeFn
       );
     }
-
-    // bound the transcludeFn to the above passed scope, so we didn't have
-    // to pass the scope as we should in a naked transclude function
-    function scopeBoundTranscludeFn($scope, cloneAttachFn, slotName) {
-      if(isFunction($scope)) {
-        slotName = cloneAttachFn;
-        cloneAttachFn = $scope;
-        $scope = scope;
-      }
-
-      if(slotName) {
-        var slotTranscludeFn = transcludeFn.slots[slotName];
-
-        if(slotTranscludeFn) {
-          return slotTranscludeFn(scope, cloneAttachFn);
-        }
-      } else {
-        transcludeFn($scope, cloneAttachFn);
-      }
-    }
-  };
+  }
 }
 
 // Set up $watches for isolate scope and controller bindings. This process
@@ -772,7 +788,7 @@ function compileNodes(nodeList, transcludeFn, maxPriority) {
 
   return (linkFnFound ? compositeLinkFn : null);
 
-  function compositeLinkFn (scope, nodeList) {
+  function compositeLinkFn (scope, nodeList, scopeBoundTranscludeFn) {
     var i,
         node,
         nodeLinkFn,
@@ -800,7 +816,7 @@ function compileNodes(nodeList, transcludeFn, maxPriority) {
       node = stableNodeList[linkFns[i++]];
       nodeLinkFn = linkFns[i++];
       childLinkFn = linkFns[i++];
-      transcludeFn = nodeLinkFn && nodeLinkFn.transcludeFn;
+      transcludeFn = nodeLinkFn && nodeLinkFn.transcludeFn || scopeBoundTranscludeFn;
 
       if(nodeLinkFn) {
         nodeLinkFn(scope, node, childLinkFn, transcludeFn);
